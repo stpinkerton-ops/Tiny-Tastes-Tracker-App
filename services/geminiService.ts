@@ -17,7 +17,7 @@ const getAiClient = async () => {
     }
     
     // After the check, the aistudio host should have populated process.env.API_KEY
-    const apiKey = process.env.API_KEY;
+    const apiKey = window.process.env.API_KEY;
     if (!apiKey) {
         console.error("Gemini API key is not set. Please select a key via the aistudio dialog.");
         throw new Error("Gemini API key not found. Please refresh and select a key to use AI features.");

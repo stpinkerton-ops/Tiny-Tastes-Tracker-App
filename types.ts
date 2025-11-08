@@ -81,12 +81,13 @@ export type ModalState =
 
 // Add global declarations for platform-specific APIs
 // Fix: Define the AIStudio interface to resolve the type conflict error.
-interface AIStudio {
-    hasSelectedApiKey: () => Promise<boolean>;
-    openSelectKey: () => Promise<void>;
-}
-
+// Fix: Moved the AIStudio interface into the 'declare global' block to prevent a type conflict error.
 declare global {
+    interface AIStudio {
+        hasSelectedApiKey: () => Promise<boolean>;
+        openSelectKey: () => Promise<void>;
+    }
+
     interface Window {
         aistudio?: AIStudio;
         process: {
