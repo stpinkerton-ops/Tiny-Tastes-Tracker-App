@@ -57,7 +57,14 @@ export const suggestRecipe = async (prompt: string): Promise<Partial<Recipe>> =>
     });
 
     const text = response.text.trim();
-    return JSON.parse(text);
+    const recipeData = JSON.parse(text);
+
+    // AI can sometimes return an array for ingredients despite the schema. Normalize it to a string.
+    if (Array.isArray(recipeData.ingredients)) {
+        recipeData.ingredients = recipeData.ingredients.join('\n');
+    }
+    
+    return recipeData;
   } catch (error) {
     console.error("Error suggesting recipe with AI:", error);
     throw new Error("Failed to generate recipe from AI.");
@@ -91,8 +98,14 @@ export const importRecipeFromImage = async (file: File): Promise<Partial<Recipe>
     });
     
     const text = response.text.trim();
-    return JSON.parse(text);
+    const recipeData = JSON.parse(text);
 
+    // AI can sometimes return an array for ingredients despite the schema. Normalize it to a string.
+    if (Array.isArray(recipeData.ingredients)) {
+        recipeData.ingredients = recipeData.ingredients.join('\n');
+    }
+
+    return recipeData;
   } catch (error) {
     console.error("Error importing recipe from image:", error);
     throw new Error("Failed to parse recipe from image.");
