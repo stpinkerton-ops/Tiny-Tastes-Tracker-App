@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -13,6 +14,7 @@ import {
   getDoc,
   writeBatch
 } from 'firebase/firestore';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
 import firebaseConfig from './firebaseConfig.ts';
 
@@ -52,6 +54,7 @@ import Icon from './components/ui/Icon.tsx';
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 function App() {
   // State
@@ -62,38 +65,73 @@ function App() {
   const [mealPlan, setMealPlan] = useState<MealPlan>({});
   const [currentPage, setCurrentPage] = useState<Page>('tracker');
   const [modalState, setModalState] = useState<ModalState>({ type: null });
-  const [loading, setLoading] = useState(true);
+  
+  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
+  const [firebaseError, setFirebaseError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Effects for Firebase data syncing
+  // Effect for Firebase Authentication
   useEffect(() => {
-    if (!familyId) {
-      setLoading(false);
-      return;
+    signInAnonymously(auth)
+      .then(() => {
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            setIsFirebaseReady(true);
+          } else {
+            setFirebaseError("Authentication failed. Please check your connection and refresh.");
+            setIsLoading(false);
+          }
+        });
+      })
+      .catch((error) => {
+        console.error("Firebase Anonymous Sign-In Failed:", error);
+        // This is a special check for the most common configuration error.
+        if (error.code === 'auth/api-key-not-valid') {
+            setFirebaseError(
+              `Firebase initialization failed: The API Key is not valid.
+              Please ensure you have created a new Browser Key in your Google Cloud Console and pasted it into the 'firebaseConfig.ts' file.`
+            );
+        } else if (error.message.includes('requests-from-referer')) {
+            const blockedUrl = error.message.match(/https?:\/\/[^\s]+/)?.[0] || 'your current URL';
+            setFirebaseError(
+              `Firebase initialization failed because your website's URL is not authorized.
+              Please add the following URL to your API key's "Website restrictions" in the Google Cloud Console: ${blockedUrl}`
+            );
+        } else {
+             setFirebaseError(`An unknown error occurred during Firebase setup: ${error.message}`);
+        }
+        setIsLoading(false);
+      });
+  }, []);
+
+  // Effects for Firebase data syncing - now depends on isFirebaseReady
+  useEffect(() => {
+    if (!isFirebaseReady || !familyId) {
+        if(isFirebaseReady && !familyId) setIsLoading(false);
+        return;
     }
 
-    setLoading(true);
+    setIsLoading(true);
 
     const unsubProfile = onSnapshot(doc(db, "families", familyId, "data", "profile"), (doc) => {
       setProfile(doc.data() as UserProfile || {});
-    });
+    }, (error) => console.error("Profile snapshot error:", error));
 
     const unsubTriedFoods = onSnapshot(collection(db, "families", familyId, "triedFoods"), (snapshot) => {
       const foods = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as TriedFoodLog[];
       setTriedFoods(foods);
-    });
+    }, (error) => console.error("TriedFoods snapshot error:", error));
 
     const unsubRecipes = onSnapshot(collection(db, "families", familyId, "recipes"), (snapshot) => {
         const recipeData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Recipe[];
         setRecipes(recipeData);
-    });
+    }, (error) => console.error("Recipes snapshot error:", error));
     
     const unsubMealPlan = onSnapshot(doc(db, "families", familyId, "data", "mealPlan"), (doc) => {
         setMealPlan(doc.data() as MealPlan || {});
-    });
+    }, (error) => console.error("MealPlan snapshot error:", error));
 
-    // A check to see if all initial data has been loaded.
-    // This is a bit naive, but good enough for this app.
-    const timer = setTimeout(() => setLoading(false), 1500);
+    const timer = setTimeout(() => setIsLoading(false), 1200);
 
     return () => {
       unsubProfile();
@@ -102,15 +140,15 @@ function App() {
       unsubMealPlan();
       clearTimeout(timer);
     };
-  }, [familyId]);
+  }, [familyId, isFirebaseReady]);
 
   // Handlers
   const handleJoinFamily = async (id: string) => {
-    // Check if family doc exists, if not, create it.
     const familyDocRef = doc(db, "families", id);
     const familyDoc = await getDoc(familyDocRef);
     if (!familyDoc.exists()) {
         const batch = writeBatch(db);
+        batch.set(doc(db, "families", id), { createdAt: serverTimestamp() }); // Create base doc
         batch.set(doc(db, "families", id, "data", "profile"), {});
         batch.set(doc(db, "families", id, "data", "mealPlan"), {});
         await batch.commit();
@@ -176,134 +214,95 @@ function App() {
     setModalState({ type: null });
   };
 
-  // Modal control
   const handleFoodClick = (food: Food) => {
-    const existingLog = triedFoods.find(f => f.id === food.name);
     setModalState({ type: 'LOG_FOOD', food });
   };
 
   const closeModal = () => setModalState({ type: null });
 
   // Render logic
-  if (!familyId) {
-    return <FamilyIdModal onJoin={handleJoinFamily} />;
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
+  const renderLoadingOrError = (Component: React.FC<any>) => (props: any) => {
+    if (firebaseError) {
+      return (
+        <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="text-center bg-red-50 p-6 rounded-lg shadow-md border border-red-200">
+            <Icon name="alert-triangle" className="w-12 h-12 text-red-500 mx-auto" />
+            <h2 className="mt-4 text-xl font-bold text-red-800">Connection Error</h2>
+            <p className="mt-2 text-sm text-red-700 whitespace-pre-wrap">{firebaseError}</p>
+          </div>
+        </div>
+      );
+    }
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
             <Icon name="loader-circle" className="w-12 h-12 text-teal-600 animate-spin" />
             <p className="mt-2 text-lg font-medium text-gray-700">Loading your tracker...</p>
+          </div>
         </div>
-      </div>
+      );
+    }
+    return <Component {...props} />;
+  };
+
+  const AppContent: React.FC = () => {
+    if (!familyId) {
+      return <FamilyIdModal onJoin={handleJoinFamily} />;
+    }
+
+    const renderPage = () => {
+        switch (currentPage) {
+            case 'tracker': return <TrackerPage triedFoods={triedFoods} onFoodClick={handleFoodClick} />;
+            case 'ideas': return <IdeasPage userProfile={profile} triedFoods={triedFoods} onSaveProfile={handleSaveProfile} onLogOut={handleLogOut} onFoodClick={handleFoodClick} />;
+            case 'recipes': return <RecipesPage recipes={recipes} mealPlan={mealPlan} onShowAddRecipe={() => setModalState({ type: 'ADD_RECIPE' })} onShowImportRecipe={() => setModalState({ type: 'IMPORT_RECIPE' })} onShowSuggestRecipe={() => setModalState({ type: 'SUGGEST_RECIPE' })} onViewRecipe={(recipe) => setModalState({ type: 'VIEW_RECIPE', recipe })} onAddToPlan={handleAddToPlan} onShowShoppingList={() => setModalState({ type: 'SHOPPING_LIST' })} />;
+            case 'log': return <LogPage triedFoods={triedFoods} babyName={profile?.babyName} />;
+            case 'learn': return <LearnPage />;
+            default: return null;
+        }
+    };
+    
+    // Fix: Replaced the chain of 'if' statements with a 'switch' statement.
+    // This provides better type narrowing for the discriminated union `ModalState`,
+    // ensuring that properties like `food`, `recipe`, etc., are only accessed
+    // on the correct state type, which resolves the TypeScript errors.
+    const renderModal = () => {
+        switch (modalState.type) {
+            case null:
+                return null;
+            case 'LOG_FOOD':
+                return <FoodLogModal food={modalState.food} existingLog={triedFoods.find(f => f.id === modalState.food.name)} onClose={closeModal} onSave={handleSaveFoodLog} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
+            case 'HOW_TO_SERVE':
+                return <HowToServeModal food={modalState.food} onClose={closeModal} />;
+            case 'ADD_RECIPE':
+                return <RecipeModal onClose={closeModal} onSave={handleSaveRecipe} initialData={modalState.recipeData} />;
+            case 'VIEW_RECIPE':
+                return <ViewRecipeModal recipe={modalState.recipe} onClose={closeModal} onDelete={handleDeleteRecipe} />;
+            case 'IMPORT_RECIPE':
+                return <AiImportModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
+            case 'SUGGEST_RECIPE':
+                return <AiSuggestModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
+            case 'SHOPPING_LIST':
+                return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={closeModal} />;
+            case 'SELECT_RECIPE':
+                return <SelectRecipeModal recipes={recipes} meal={modalState.meal} onClose={closeModal} onSelect={(recipe) => handleSelectRecipeForPlan(recipe, modalState.date, modalState.meal)} />;
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <>
+            <Layout currentPage={currentPage} setCurrentPage={setCurrentPage} profile={profile} familyId={familyId} progress={{ triedCount: triedFoods.length, totalCount: totalFoodCount }}>
+                {renderPage()}
+            </Layout>
+            {renderModal()}
+        </>
     );
   }
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'tracker':
-        return <TrackerPage triedFoods={triedFoods} onFoodClick={handleFoodClick} />;
-      case 'ideas':
-        return <IdeasPage userProfile={profile} triedFoods={triedFoods} onSaveProfile={handleSaveProfile} onLogOut={handleLogOut} onFoodClick={handleFoodClick} />;
-      case 'recipes':
-        return <RecipesPage 
-                    recipes={recipes} 
-                    mealPlan={mealPlan} 
-                    onShowAddRecipe={() => setModalState({ type: 'ADD_RECIPE' })}
-                    onShowImportRecipe={() => setModalState({ type: 'IMPORT_RECIPE' })}
-                    onShowSuggestRecipe={() => setModalState({ type: 'SUGGEST_RECIPE' })}
-                    onViewRecipe={(recipe) => setModalState({ type: 'VIEW_RECIPE', recipe })}
-                    onAddToPlan={handleAddToPlan}
-                    onShowShoppingList={() => setModalState({ type: 'SHOPPING_LIST' })}
-                />;
-      case 'log':
-        return <LogPage triedFoods={triedFoods} babyName={profile?.babyName} />;
-      case 'learn':
-        return <LearnPage />;
-      default:
-        return null;
-    }
-  };
-
-  const renderModal = () => {
-    const state = modalState;
-    if (!state.type) return null;
-
-    // Fix: Replaced switch statement with a series of if-statements.
-    // This resolves a TypeScript type-narrowing issue where the compiler was not
-    // correctly inferring the specific modal state type within each case, leading to
-    // property access errors on the union type.
-    if (state.type === 'LOG_FOOD') {
-      return <FoodLogModal 
-                  food={state.food} 
-                  existingLog={triedFoods.find(f => f.id === state.food.name)}
-                  onClose={closeModal} 
-                  onSave={handleSaveFoodLog} 
-                  onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })}
-              />;
-    }
-    
-    if (state.type === 'HOW_TO_SERVE') {
-      return <HowToServeModal food={state.food} onClose={closeModal} />;
-    }
-    
-    if (state.type === 'ADD_RECIPE') {
-      return <RecipeModal 
-                  onClose={closeModal} 
-                  onSave={handleSaveRecipe} 
-                  initialData={state.recipeData}
-              />;
-    }
-
-    if (state.type === 'VIEW_RECIPE') {
-      return <ViewRecipeModal recipe={state.recipe} onClose={closeModal} onDelete={handleDeleteRecipe} />;
-    }
-    
-    if (state.type === 'IMPORT_RECIPE') {
-      return <AiImportModal 
-                  onClose={closeModal} 
-                  onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} 
-              />;
-    }
-    
-    if (state.type === 'SUGGEST_RECIPE') {
-      return <AiSuggestModal 
-                  onClose={closeModal} 
-                  onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} 
-              />;
-    }
-    
-    if (state.type === 'SHOPPING_LIST') {
-      return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={closeModal} />;
-    }
-    
-    if (state.type === 'SELECT_RECIPE') {
-      return <SelectRecipeModal 
-                  recipes={recipes} 
-                  meal={state.meal}
-                  onClose={closeModal} 
-                  onSelect={(recipe) => handleSelectRecipeForPlan(recipe, state.date, state.meal)} 
-              />;
-    }
-
-    return null;
-  };
-
-  return (
-    <>
-      <Layout 
-        currentPage={currentPage}
-        setCurrentPage={setCurrentPage}
-        profile={profile}
-        familyId={familyId}
-        progress={{ triedCount: triedFoods.length, totalCount: totalFoodCount }}
-      >
-        {renderPage()}
-      </Layout>
-      {renderModal()}
-    </>
-  );
+  const FinalApp = renderLoadingOrError(AppContent);
+  return <FinalApp />;
 }
 
 export default App;
