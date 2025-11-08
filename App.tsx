@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types.ts';
 import { totalFoodCount } from './constants.ts';
@@ -257,13 +258,16 @@ const App: React.FC = () => {
         }
     };
 
-    // Fix: Assign `modalState` to a local variable `state` to ensure stable type narrowing
-    // for the discriminated union within the switch statement.
     const renderModals = () => {
+        // Fix: Assign `modalState` to a local variable `state` to ensure stable type narrowing.
+        // The previous `if (!state.type)` check was not correctly narrowing the type for the
+        // switch statement. By moving the null check into a `case`, TypeScript can
+        // correctly infer the type of `state` for each modal type.
         const state = modalState;
-        if (!state.type) return null;
 
         switch (state.type) {
+            case null:
+                return null;
             case 'LOG_FOOD': {
                 const existingLog = triedFoods.find(f => f.id === state.food.name);
                 return <FoodLogModal food={state.food} existingLog={existingLog} onClose={() => setModalState({ type: null })} onSave={saveTriedFood} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;

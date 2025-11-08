@@ -1,14 +1,15 @@
 // This file defines global types available on the `window` object in this platform,
 // as well as the specific types for the application's data models.
 
-// Fix: Define a named interface for the aistudio object to resolve a global type
-// declaration conflict where the property was expected to be of type 'AIStudio'.
-interface AIStudio {
-  hasSelectedApiKey: () => Promise<boolean>;
-  openSelectKey: () => Promise<void>;
-}
-
+// Fix: Define the AIStudio interface inside the `declare global` block to prevent
+// declaration conflicts with other global types that might be present in the
+// development environment, which was causing a subsequent property declaration error.
 declare global {
+  interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+  }
+  
   interface Window {
     // The `aistudio` object is provided by the hosting platform for secure
     // management of the user's Gemini API key.
