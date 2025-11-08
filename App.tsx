@@ -1,8 +1,7 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { initializeApp } from 'firebase/app';
 import {
-  getFirestore,
   doc,
   onSnapshot,
   setDoc,
@@ -13,9 +12,9 @@ import {
   getDoc,
   writeBatch
 } from 'firebase/firestore';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
-import firebaseConfig from './firebaseConfig.ts';
+import { auth, db } from './firebase.ts';
 
 // Import types
 import {
@@ -48,9 +47,9 @@ import AiImportModal from './components/modals/AiImportModal.tsx';
 import AiSuggestModal from './components/modals/AiSuggestModal.tsx';
 import ShoppingListModal from './components/modals/ShoppingListModal.tsx';
 import SelectRecipeModal from './components/modals/SelectRecipeModal.tsx';
-// FIX: Changed to default import as Icon is exported as default.
 import Icon from './components/ui/Icon.tsx';
 import { AlertTriangle, Copy, LoaderCircle } from 'lucide-react';
+import firebaseConfig from './firebaseConfig.ts';
 
 
 // --- DEFINITIVE FIX: Interactive Configuration Checklist ---
@@ -146,37 +145,25 @@ function App() {
 
   // Effect for Firebase Authentication
   useEffect(() => {
-    try {
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        signInAnonymously(auth)
-          .then(() => {
-            onAuthStateChanged(auth, (user) => {
-              if (user) {
-                setIsFirebaseReady(true);
-                (window as any).db = db; 
-              } else {
-                 setFirebaseError("Authentication failed unexpectedly. The user object is null.");
-              }
-            });
-          })
-          .catch((error) => {
-            console.error("Firebase Anonymous Sign-In Failed:", error);
-            setFirebaseError(error.message || "An unknown error occurred during Firebase setup.");
-          });
-
-    } catch(error: any) {
-        console.error("Firebase Initialization Failed:", error);
-        setFirebaseError(error.message || "A critical error occurred initializing Firebase.");
-    }
+    signInAnonymously(auth)
+      .then(() => {
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            setIsFirebaseReady(true);
+          } else {
+             setFirebaseError("Authentication failed unexpectedly. The user object is null.");
+          }
+        });
+      })
+      .catch((error) => {
+        console.error("Firebase Anonymous Sign-In Failed:", error);
+        setFirebaseError(error.message || "An unknown error occurred during Firebase setup.");
+      });
   }, []);
 
   // Effects for Firebase data syncing
   useEffect(() => {
-    const db = (window as any).db;
-    if (!isFirebaseReady || !familyId || !db) {
+    if (!isFirebaseReady || !familyId) {
         if(isFirebaseReady && !familyId) setIsLoading(false);
         return;
     }
@@ -214,7 +201,6 @@ function App() {
 
   // Handlers
   const handleJoinFamily = async (id: string) => {
-    const db = (window as any).db;
     const familyDocRef = doc(db, "families", id);
     const familyDoc = await getDoc(familyDocRef);
     if (!familyDoc.exists()) {
@@ -240,14 +226,12 @@ function App() {
 
   const handleSaveProfile = useCallback(async (newProfile: UserProfile) => {
     if (!familyId) return;
-    const db = (window as any).db;
     await setDoc(doc(db, "families", familyId, "data", "profile"), newProfile, { merge: true });
     alert("Profile saved!");
   }, [familyId]);
 
   const handleSaveFoodLog = useCallback(async (foodName: string, data: FoodLogData) => {
     if (!familyId) return;
-    const db = (window as any).db;
     const logDocRef = doc(db, "families", familyId, "triedFoods", foodName);
     await setDoc(logDocRef, data, { merge: true });
     setModalState({ type: null });
@@ -255,7 +239,6 @@ function App() {
   
   const handleSaveRecipe = useCallback(async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
     if (!familyId) return;
-    const db = (window as any).db;
     await addDoc(collection(db, "families", familyId, "recipes"), {
         ...recipeData,
         createdAt: serverTimestamp()
@@ -265,14 +248,12 @@ function App() {
 
   const handleDeleteRecipe = useCallback(async (recipeId: string) => {
     if (!familyId) return;
-    const db = (window as any).db;
     await deleteDoc(doc(db, "families", familyId, "recipes", recipeId));
     setModalState({ type: null });
   }, [familyId]);
 
   const handleUpdateMealPlan = useCallback(async (newMealPlan: MealPlan) => {
     if (!familyId) return;
-    const db = (window as any).db;
     await setDoc(doc(db, "families", familyId, "data", "mealPlan"), newMealPlan);
   }, [familyId]);
   
@@ -328,35 +309,31 @@ function App() {
         }
     };
     
-    // FIX: Replaced switch statement with if-statements to fix TypeScript type narrowing issues.
-    // The switch statement was not correctly inferring the type of 'state' within each case block.
+    // FIX: Replaced the if-statement chain with a switch statement to correctly handle type narrowing for the discriminated union `modalState`. The previous if-chain was causing TypeScript errors.
     const renderModal = () => {
         const state = modalState;
-        if (state.type === 'LOG_FOOD') {
-            return <FoodLogModal food={state.food} existingLog={triedFoods.find(f => f.id === state.food.name)} onClose={closeModal} onSave={handleSaveFoodLog} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
+        switch (state.type) {
+            case 'LOG_FOOD':
+                return <FoodLogModal food={state.food} existingLog={triedFoods.find(f => f.id === state.food.name)} onClose={closeModal} onSave={handleSaveFoodLog} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
+            case 'HOW_TO_SERVE':
+                return <HowToServeModal food={state.food} onClose={closeModal} />;
+            case 'ADD_RECIPE':
+                return <RecipeModal onClose={closeModal} onSave={handleSaveRecipe} initialData={state.recipeData} />;
+            case 'VIEW_RECIPE':
+                return <ViewRecipeModal recipe={state.recipe} onClose={closeModal} onDelete={handleDeleteRecipe} />;
+            case 'IMPORT_RECIPE':
+                return <AiImportModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
+            case 'SUGGEST_RECIPE':
+                return <AiSuggestModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
+            case 'SHOPPING_LIST':
+                return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={closeModal} />;
+            case 'SELECT_RECIPE':
+                return <SelectRecipeModal recipes={recipes} meal={state.meal} onClose={closeModal} onSelect={(recipe) => handleSelectRecipeForPlan(recipe, state.date, state.meal)} />;
+            case null:
+                return null;
+            default:
+                return null;
         }
-        if (state.type === 'HOW_TO_SERVE') {
-            return <HowToServeModal food={state.food} onClose={closeModal} />;
-        }
-        if (state.type === 'ADD_RECIPE') {
-            return <RecipeModal onClose={closeModal} onSave={handleSaveRecipe} initialData={state.recipeData} />;
-        }
-        if (state.type === 'VIEW_RECIPE') {
-            return <ViewRecipeModal recipe={state.recipe} onClose={closeModal} onDelete={handleDeleteRecipe} />;
-        }
-        if (state.type === 'IMPORT_RECIPE') {
-            return <AiImportModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
-        }
-        if (state.type === 'SUGGEST_RECIPE') {
-            return <AiSuggestModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
-        }
-        if (state.type === 'SHOPPING_LIST') {
-            return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={closeModal} />;
-        }
-        if (state.type === 'SELECT_RECIPE') {
-            return <SelectRecipeModal recipes={recipes} meal={state.meal} onClose={closeModal} onSelect={(recipe) => handleSelectRecipeForPlan(recipe, state.date, state.meal)} />;
-        }
-        return null;
     };
 
 

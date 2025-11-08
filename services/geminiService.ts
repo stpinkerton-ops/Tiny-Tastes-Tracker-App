@@ -1,10 +1,9 @@
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { httpsCallable } from 'firebase/functions';
 import { Recipe } from '../types.ts';
+import { functions } from '../firebase.ts';
 
 // This is the new, simplified, and secure client-side implementation.
 // It calls our own backend Firebase Cloud Functions instead of Gemini AI directly.
-
-const functions = getFunctions();
 
 // Helper to convert a file to a base64 string
 const fileToBase64 = (file: File): Promise<string> => {
