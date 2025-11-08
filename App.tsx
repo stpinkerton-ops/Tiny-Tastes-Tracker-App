@@ -16,22 +16,10 @@ import AiImportModal from './components/modals/AiImportModal.tsx';
 import AiSuggestModal from './components/modals/AiSuggestModal.tsx';
 import ShoppingListModal from './components/modals/ShoppingListModal.tsx';
 import SelectRecipeModal from './components/modals/SelectRecipeModal.tsx';
+import firebaseConfig from './firebaseConfig.ts'; // Import the corrected config
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, Auth } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, addDoc, Timestamp, deleteDoc, Unsubscribe, Firestore } from 'firebase/firestore';
-
-// This is the Firebase configuration. The apiKey here is a public identifier for your
-// Firebase project and is NOT the secret key used for the Gemini API.
-// It's safe to have this in your client-side code because security is handled
-// by Firebase Security Rules, not this key.
-const firebaseConfig = {
-    apiKey: "AIzaSyA3Qw1oZInrhteTAd7iOK1D2bMHMVCG4EE",
-    authDomain: "tiny-tastes-tracker.firebaseapp.com",
-    projectId: "tiny-tastes-tracker",
-    storageBucket: "tiny-tastes-tracker.firebasestorage.app",
-    messagingSenderId: "87950543929",
-    appId: "1:87950543929:web:561607c04f73369f6411e8",
-};
 
 const APP_ID = "tiny-tastes-tracker";
 
@@ -42,7 +30,7 @@ interface FirebaseInstances {
 
 const App: React.FC = () => {
     const [firebase, setFirebase] = useState<FirebaseInstances | null>(null);
-    const [initError, setInitError] = useState<string | null>(null);
+    const [initError, setInitError] = useState<React.ReactNode | null>(null);
     const [familyId, setFamilyId] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState<Page>('tracker');
     const [triedFoods, setTriedFoods] = useState<TriedFoodLog[]>([]);
@@ -63,15 +51,45 @@ const App: React.FC = () => {
                 if (!user) {
                     signInAnonymously(auth).catch(error => {
                         console.error("Anonymous sign-in failed", error);
-                        setInitError("Authentication failed. The app cannot connect to the server.");
+                        const errorMessage = error.message || '';
+                        const refererMatch = errorMessage.match(/requests-from-referer-([^)]+)-are-blocked/);
+
+                        if (refererMatch && refererMatch[1]) {
+                            const blockedUrl = refererMatch[1];
+                            setInitError(
+                                <>
+                                    <p>Authentication failed. Your API key's security settings are blocking requests from this website.</p>
+                                    <p className="mt-4"><strong>This is a security setting on Google's servers.</strong> To fix this, you must add the blocked website URL to your API key's "allowlist".</p>
+                                    <ol className="list-decimal list-inside text-left mt-2 space-y-1">
+                                        <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline">Google Cloud API Credentials Page</a>.</li>
+                                        <li>Select your project and click on the API key name.</li>
+                                        <li>Under "Application restrictions," select "HTTP referrers (web sites)".</li>
+                                        <li>Click "ADD" and enter the following URL: <br /> <code className="text-sm bg-gray-100 p-1 rounded break-all"><strong>{blockedUrl}/*</strong></code></li>
+                                        <li>Click Save. It may take a few minutes to update.</li>
+                                    </ol>
+                                </>
+                            );
+                        } else if (error.code === 'auth/api-key-not-valid') {
+                            setInitError(
+                                <>
+                                    <p>Authentication failed because the Firebase API key is not valid.</p>
+                                    <p className="mt-2">This usually happens if the key in your code doesn't match the one in your Firebase project, or it has been deleted.</p>
+                                    <p className="mt-4">Please verify the key in your `firebaseConfig.ts` file is correct and active in the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline">Google Cloud Console</a>.</p>
+                                </>
+                            );
+                        } else {
+                            const friendlyMessage = `Authentication failed: ${error.message}. Please double-check your Firebase API Key and its restrictions in the Google Cloud Console.`;
+                            setInitError(friendlyMessage);
+                        }
                     });
                 }
             });
 
             return () => unsubscribe();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error initializing Firebase:", error);
-            setInitError("The app could not start. Please check the Firebase configuration.");
+            const friendlyMessage = `The app could not start: ${error.message}. Please check the Firebase configuration.`;
+            setInitError(friendlyMessage);
             setLoading(false);
         }
     }, []);
@@ -233,9 +251,9 @@ const App: React.FC = () => {
     if (initError) {
         return (
             <div className="flex items-center justify-center h-screen p-4">
-                <div className="text-center">
-                    <h1 className="text-2xl font-bold text-red-600">Application Error</h1>
-                    <p className="mt-2 text-gray-700">{initError}</p>
+                <div className="text-center bg-red-50 p-6 rounded-lg border border-red-200 max-w-lg">
+                    <h1 className="text-2xl font-bold text-red-700">Application Error</h1>
+                    <div className="mt-2 text-gray-700">{initError}</div>
                 </div>
             </div>
         );

@@ -37,9 +37,9 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
                 const dayPlan = mealPlan[dateStr];
 
                 if (dayPlan) {
-                    for (const meal of Object.values(dayPlan)) {
-                        // Fix for: Property 'id' does not exist on type 'unknown'.
-                        const recipe = recipes.find(r => r.id === (meal as { id: string }).id);
+                    // Fix: Cast the result of Object.values to the correct meal object type to resolve property access on 'unknown'.
+                    for (const meal of Object.values(dayPlan) as { id: string; title: string }[]) {
+                        const recipe = recipes.find(r => r.id === meal.id);
                         if (recipe) {
                             parseIngredients(recipe.ingredients).forEach(ing => allIngredients.add(ing));
                         }
@@ -89,7 +89,7 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
                                 <div key={category}>
                                     <h4 className="text-md font-semibold text-teal-700 mt-3">{category}</h4>
                                     <ul className="list-disc list-outside pl-5 space-y-1">
-                                        {/* Fix for: Property 'map' does not exist on type 'unknown'. */}
+                                        {/* Fix: Cast 'items' to string[] as Object.entries can return `unknown` for values. */}
                                         {(items as string[]).map((item, index) => <li key={index}>{item}</li>)}
                                     </ul>
                                 </div>

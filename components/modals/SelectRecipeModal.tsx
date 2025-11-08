@@ -1,5 +1,5 @@
 import React from 'react';
-import { Recipe } from '../../types.ts';
+import { Recipe, RecipeFilter } from '../../types.ts';
 import Icon from '../ui/Icon.tsx';
 
 interface SelectRecipeModalProps {
@@ -12,7 +12,7 @@ interface SelectRecipeModalProps {
 const SelectRecipeModal: React.FC<SelectRecipeModalProps> = ({ recipes, meal, onClose, onSelect }) => {
     const filteredRecipes = recipes.filter(recipe => {
         if (!recipe.mealTypes || recipe.mealTypes.length === 0) return true;
-        return recipe.mealTypes.includes(meal as any);
+        return recipe.mealTypes.includes(meal as RecipeFilter);
     });
 
     return (
