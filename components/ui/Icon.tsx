@@ -1,5 +1,6 @@
 
-import React, { useEffect, useRef } from 'react';
+
+import React, { useEffect, useRef } from 'https://aistudiocdn.com/react@^19.2.0';
 
 // This is a global declaration for the lucide library loaded from the CDN
 declare global {

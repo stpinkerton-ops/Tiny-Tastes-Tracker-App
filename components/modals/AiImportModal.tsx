@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState } from 'https://aistudiocdn.com/react@^19.2.0';
 import { Recipe } from '../../types.ts';
 import { importRecipeFromImage } from '../../services/geminiService.ts';
 import Icon from '../ui/Icon.tsx';

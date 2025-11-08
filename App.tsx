@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+
+import React, { useState, useEffect } from 'https://aistudiocdn.com/react@^19.2.0';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types.ts';
 import { totalFoodCount } from './constants.ts';
 import Layout from './components/Layout.tsx';
@@ -17,9 +18,9 @@ import AiImportModal from './components/modals/AiImportModal.tsx';
 import AiSuggestModal from './components/modals/AiSuggestModal.tsx';
 import ShoppingListModal from './components/modals/ShoppingListModal.tsx';
 import SelectRecipeModal from './components/modals/SelectRecipeModal.tsx';
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, Auth } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, addDoc, Timestamp, deleteDoc, Unsubscribe, Firestore } from 'firebase/firestore';
+import { initializeApp } from 'https://aistudiocdn.com/firebase@^12.5.0/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, Auth } from 'https://aistudiocdn.com/firebase@^12.5.0/auth';
+import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, addDoc, Timestamp, deleteDoc, Unsubscribe, Firestore } from 'https://aistudiocdn.com/firebase@^12.5.0/firestore';
 
 const firebaseConfig = {
     apiKey: "AIzaSyA3Qw1oZInrhteTAd7iOK1D2bMHMVCG4EE",

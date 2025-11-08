@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState } from 'https://aistudiocdn.com/react@^19.2.0';
 import { Food, TriedFoodLog, Filter, FoodCategory } from '../../types.ts';
 import { allFoods, totalFoodCount } from '../../constants.ts';
 import Icon from '../ui/Icon.tsx';

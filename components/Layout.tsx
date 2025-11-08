@@ -1,5 +1,6 @@
 
-import React from 'react';
+
+import React from 'https://aistudiocdn.com/react@^19.2.0';
 import { Page, UserProfile } from '../types.ts';
 import Icon from './ui/Icon.tsx';
 
