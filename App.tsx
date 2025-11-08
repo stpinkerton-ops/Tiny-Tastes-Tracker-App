@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -53,10 +49,81 @@ import ShoppingListModal from './components/modals/ShoppingListModal.tsx';
 import SelectRecipeModal from './components/modals/SelectRecipeModal.tsx';
 import Icon from './components/ui/Icon.tsx';
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// --- DEFINITIVE FIX: Interactive Configuration Checklist ---
+const ConfigCheckPage: React.FC<{ error: string }> = ({ error }) => {
+    const apiKey = firebaseConfig.apiKey;
+    const currentUrl = window.location.origin;
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            alert("Copied to clipboard!");
+        }, () => {
+            alert("Failed to copy.");
+        });
+    };
+
+    return (
+        <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50">
+            <div className="w-full max-w-3xl text-left bg-red-50 p-6 sm:p-8 rounded-lg shadow-xl border border-red-20al">
+                <div className="flex items-center gap-4">
+                    <Icon name="alert-triangle" className="w-12 h-12 text-red-500 flex-shrink-0" />
+                    <div>
+                        <h2 className="text-2xl font-bold text-red-800">Connection Error</h2>
+                        <p className="mt-1 text-md text-red-700">Your app's security settings are working, but they need to be configured. Please follow the steps below.</p>
+                    </div>
+                </div>
+
+                <div className="mt-6 space-y-6 bg-white p-6 rounded-md border border-gray-200">
+                    {/* Step 1 */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800">Step 1: Open Your API Key Settings</h3>
+                        <p className="text-sm text-gray-600 mt-1">This will take you to the Google Cloud Console where your keys are managed.</p>
+                        <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block w-full text-center rounded-md bg-blue-600 text-white font-semibold text-sm p-2.5 hover:bg-blue-700">
+                            Open Google Cloud API Credentials
+                        </a>
+                    </div>
+                    <hr/>
+                    {/* Step 2 */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800">Step 2: Find and Edit the Correct API Key</h3>
+                        <p className="text-sm text-gray-600 mt-1">In the list of keys, find the exact one your app is using below. Click its name to edit it.</p>
+                        <div className="mt-2 flex items-center">
+                            <input type="text" readOnly value={apiKey} className="flex-grow rounded-l-md border-gray-300 bg-gray-100 font-mono text-sm p-2" />
+                            <button onClick={() => copyToClipboard(apiKey)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Icon name="copy" className="w-5 h-5"/></button>
+                        </div>
+                    </div>
+                    <hr/>
+                    {/* Step 3 */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800">Step 3: Add Your Website URL</h3>
+                        <p className="text-sm text-gray-600 mt-1">In the key's settings, under "Application restrictions", select "Websites". Then, under "Website restrictions", click "ADD" and paste this exact URL:</p>
+                        <div className="mt-2 flex items-center">
+                            <input type="text" readOnly value={`${currentUrl}/*`} className="flex-grow rounded-l-md border-gray-300 bg-gray-100 font-mono text-sm p-2" />
+                            <button onClick={() => copyToClipboard(`${currentUrl}/*`)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Icon name="copy" className="w-5 h-5"/></button>
+                        </div>
+                    </div>
+                    <hr/>
+                    {/* Step 4 */}
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800">Step 4: Restrict the Key to Required APIs</h3>
+                        <p className="text-sm text-gray-600 mt-1">This is a critical security step. Under "API restrictions", select "Restrict key" and make sure **both** of these APIs are in the list:</p>
+                        <ul className="mt-2 list-disc list-inside text-sm text-gray-800 bg-gray-100 p-3 rounded-md">
+                            <li><code className="font-semibold">Cloud Firestore API</code></li>
+                            <li><code className="font-semibold">Identity Toolkit API</code> (for login)</li>
+                        </ul>
+                    </div>
+                </div>
+                 <div className="text-center">
+                    <button onClick={() => window.location.reload()} className="mt-8 inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
+                        I've Saved My Changes, Now Refresh
+                    </button>
+                    <p className="text-xs text-gray-500 mt-2">(Note: It can take up to 5 minutes for settings to take effect)</p>
+                 </div>
+            </div>
+        </div>
+    );
+};
+
 
 function App() {
   // State
@@ -74,41 +141,38 @@ function App() {
 
   // Effect for Firebase Authentication
   useEffect(() => {
-    signInAnonymously(auth)
-      .then(() => {
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            setIsFirebaseReady(true);
-          } else {
-            setFirebaseError("Authentication failed. Please check your connection and refresh.");
-            setIsLoading(false);
-          }
-        });
-      })
-      .catch((error) => {
-        console.error("Firebase Anonymous Sign-In Failed:", error);
-        // This is a special check for the most common configuration error.
-        if (error.code === 'auth/api-key-not-valid') {
-            setFirebaseError(
-              `Firebase initialization failed: The API Key is not valid.
-              Please ensure you have created a new Browser Key in your Google Cloud Console and pasted it into the 'firebaseConfig.ts' file.`
-            );
-        } else if (error.message.includes('requests-from-referer')) {
-            const blockedUrl = error.message.match(/https?:\/\/[^\s]+/)?.[0] || 'your current URL';
-            setFirebaseError(
-              `Firebase initialization failed because your website's URL is not authorized.
-              Please add the following URL to your API key's "Website restrictions" in the Google Cloud Console: ${blockedUrl}`
-            );
-        } else {
-             setFirebaseError(`An unknown error occurred during Firebase setup: ${error.message}`);
-        }
-        setIsLoading(false);
-      });
+    try {
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        signInAnonymously(auth)
+          .then(() => {
+            onAuthStateChanged(auth, (user) => {
+              if (user) {
+                setIsFirebaseReady(true);
+                // Attach db for other effects to use
+                (window as any).db = db; 
+              } else {
+                 setFirebaseError("Authentication failed unexpectedly. The user object is null.");
+              }
+            });
+          })
+          .catch((error) => {
+            console.error("Firebase Anonymous Sign-In Failed:", error);
+            setFirebaseError(error.message || "An unknown error occurred during Firebase setup.");
+          });
+
+    } catch(error: any) {
+        console.error("Firebase Initialization Failed:", error);
+        setFirebaseError(error.message || "A critical error occurred initializing Firebase.");
+    }
   }, []);
 
-  // Effects for Firebase data syncing - now depends on isFirebaseReady
+  // Effects for Firebase data syncing
   useEffect(() => {
-    if (!isFirebaseReady || !familyId) {
+    const db = (window as any).db;
+    if (!isFirebaseReady || !familyId || !db) {
         if(isFirebaseReady && !familyId) setIsLoading(false);
         return;
     }
@@ -146,11 +210,12 @@ function App() {
 
   // Handlers
   const handleJoinFamily = async (id: string) => {
+    const db = (window as any).db;
     const familyDocRef = doc(db, "families", id);
     const familyDoc = await getDoc(familyDocRef);
     if (!familyDoc.exists()) {
         const batch = writeBatch(db);
-        batch.set(doc(db, "families", id), { createdAt: serverTimestamp() }); // Create base doc
+        batch.set(doc(db, "families", id), { createdAt: serverTimestamp() });
         batch.set(doc(db, "families", id, "data", "profile"), {});
         batch.set(doc(db, "families", id, "data", "mealPlan"), {});
         await batch.commit();
@@ -171,12 +236,14 @@ function App() {
 
   const handleSaveProfile = useCallback(async (newProfile: UserProfile) => {
     if (!familyId) return;
+    const db = (window as any).db;
     await setDoc(doc(db, "families", familyId, "data", "profile"), newProfile, { merge: true });
     alert("Profile saved!");
   }, [familyId]);
 
   const handleSaveFoodLog = useCallback(async (foodName: string, data: FoodLogData) => {
     if (!familyId) return;
+    const db = (window as any).db;
     const logDocRef = doc(db, "families", familyId, "triedFoods", foodName);
     await setDoc(logDocRef, data, { merge: true });
     setModalState({ type: null });
@@ -184,6 +251,7 @@ function App() {
   
   const handleSaveRecipe = useCallback(async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
     if (!familyId) return;
+    const db = (window as any).db;
     await addDoc(collection(db, "families", familyId, "recipes"), {
         ...recipeData,
         createdAt: serverTimestamp()
@@ -193,12 +261,14 @@ function App() {
 
   const handleDeleteRecipe = useCallback(async (recipeId: string) => {
     if (!familyId) return;
+    const db = (window as any).db;
     await deleteDoc(doc(db, "families", familyId, "recipes", recipeId));
     setModalState({ type: null });
   }, [familyId]);
 
   const handleUpdateMealPlan = useCallback(async (newMealPlan: MealPlan) => {
     if (!familyId) return;
+    const db = (window as any).db;
     await setDoc(doc(db, "families", familyId, "data", "mealPlan"), newMealPlan);
   }, [familyId]);
   
@@ -223,32 +293,22 @@ function App() {
   const closeModal = () => setModalState({ type: null });
 
   // Render logic
-  const renderLoadingOrError = (Component: React.FC<any>) => (props: any) => {
+  const AppContent: React.FC = () => {
     if (firebaseError) {
-      return (
-        <div className="flex items-center justify-center min-h-screen p-4">
-          <div className="text-center bg-red-50 p-6 rounded-lg shadow-md border border-red-200">
-            <Icon name="alert-triangle" className="w-12 h-12 text-red-500 mx-auto" />
-            <h2 className="mt-4 text-xl font-bold text-red-800">Connection Error</h2>
-            <p className="mt-2 text-sm text-red-700 whitespace-pre-wrap">{firebaseError}</p>
-          </div>
-        </div>
-      );
+        return <ConfigCheckPage error={firebaseError} />;
     }
-    if (isLoading) {
+    
+    if (isLoading || !isFirebaseReady) {
       return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
             <Icon name="loader-circle" className="w-12 h-12 text-teal-600 animate-spin" />
-            <p className="mt-2 text-lg font-medium text-gray-700">Loading your tracker...</p>
+            <p className="mt-2 text-lg font-medium text-gray-700">Connecting to your tracker...</p>
           </div>
         </div>
       );
     }
-    return <Component {...props} />;
-  };
-
-  const AppContent: React.FC = () => {
+    
     if (!familyId) {
       return <FamilyIdModal onJoin={handleJoinFamily} />;
     }
@@ -264,24 +324,20 @@ function App() {
         }
     };
     
-    // Fix: Re-structured the modal rendering logic to use an early return for the `null`
-    // state. This helps TypeScript's control flow analysis correctly narrow the
-    // `modalState` type within the `switch` statement, resolving errors where properties
-    // like `food` or `recipe` were not found.
     const renderModal = () => {
         if (modalState.type === null) {
             return null;
         }
-        
-        switch (modalState.type) {
+        const state = modalState;
+        switch (state.type) {
             case 'LOG_FOOD':
-                return <FoodLogModal food={modalState.food} existingLog={triedFoods.find(f => f.id === modalState.food.name)} onClose={closeModal} onSave={handleSaveFoodLog} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
+                return <FoodLogModal food={state.food} existingLog={triedFoods.find(f => f.id === state.food.name)} onClose={closeModal} onSave={handleSaveFoodLog} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
             case 'HOW_TO_SERVE':
-                return <HowToServeModal food={modalState.food} onClose={closeModal} />;
+                return <HowToServeModal food={state.food} onClose={closeModal} />;
             case 'ADD_RECIPE':
-                return <RecipeModal onClose={closeModal} onSave={handleSaveRecipe} initialData={modalState.recipeData} />;
+                return <RecipeModal onClose={closeModal} onSave={handleSaveRecipe} initialData={state.recipeData} />;
             case 'VIEW_RECIPE':
-                return <ViewRecipeModal recipe={modalState.recipe} onClose={closeModal} onDelete={handleDeleteRecipe} />;
+                return <ViewRecipeModal recipe={state.recipe} onClose={closeModal} onDelete={handleDeleteRecipe} />;
             case 'IMPORT_RECIPE':
                 return <AiImportModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
             case 'SUGGEST_RECIPE':
@@ -289,11 +345,12 @@ function App() {
             case 'SHOPPING_LIST':
                 return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={closeModal} />;
             case 'SELECT_RECIPE':
-                return <SelectRecipeModal recipes={recipes} meal={modalState.meal} onClose={closeModal} onSelect={(recipe) => handleSelectRecipeForPlan(recipe, modalState.date, modalState.meal)} />;
+                return <SelectRecipeModal recipes={recipes} meal={state.meal} onClose={closeModal} onSelect={(recipe) => handleSelectRecipeForPlan(recipe, state.date, state.meal)} />;
             default:
                 return null;
         }
     };
+
 
     return (
         <>
@@ -305,8 +362,7 @@ function App() {
     );
   }
 
-  const FinalApp = renderLoadingOrError(AppContent);
-  return <FinalApp />;
+  return <AppContent />;
 }
 
 export default App;
