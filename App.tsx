@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types.ts';
 import { totalFoodCount } from './constants.ts';
@@ -256,27 +257,29 @@ const App: React.FC = () => {
         }
     };
 
-    // Fix: Replaced `state` with `modalState` to allow for correct type narrowing within the switch statement.
+    // Fix: Assign `modalState` to a local variable `state` to ensure stable type narrowing
+    // for the discriminated union within the switch statement.
     const renderModals = () => {
-        if (!modalState.type) return null;
+        const state = modalState;
+        if (!state.type) return null;
 
-        switch (modalState.type) {
+        switch (state.type) {
             case 'LOG_FOOD': {
-                const existingLog = triedFoods.find(f => f.id === modalState.food.name);
-                return <FoodLogModal food={modalState.food} existingLog={existingLog} onClose={() => setModalState({ type: null })} onSave={saveTriedFood} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
+                const existingLog = triedFoods.find(f => f.id === state.food.name);
+                return <FoodLogModal food={state.food} existingLog={existingLog} onClose={() => setModalState({ type: null })} onSave={saveTriedFood} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
             }
             case 'HOW_TO_SERVE':
-                return <HowToServeModal food={modalState.food} onClose={() => setModalState({ type: 'LOG_FOOD', food: modalState.food })} />;
+                return <HowToServeModal food={state.food} onClose={() => setModalState({ type: 'LOG_FOOD', food: state.food })} />;
             case 'ADD_RECIPE':
-                return <RecipeModal onClose={() => setModalState({ type: null })} onSave={addRecipe} initialData={modalState.recipeData} />;
+                return <RecipeModal onClose={() => setModalState({ type: null })} onSave={addRecipe} initialData={state.recipeData} />;
             case 'VIEW_RECIPE':
-                return <ViewRecipeModal recipe={modalState.recipe} onClose={() => setModalState({ type: null })} onDelete={deleteRecipe} />;
+                return <ViewRecipeModal recipe={state.recipe} onClose={() => setModalState({ type: null })} onDelete={deleteRecipe} />;
             case 'IMPORT_RECIPE':
                 return <AiImportModal onClose={() => setModalState({ type: null })} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
             case 'SUGGEST_RECIPE':
                 return <AiSuggestModal onClose={() => setModalState({ type: null })} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
             case 'SELECT_RECIPE':
-                return <SelectRecipeModal recipes={recipes} meal={modalState.meal} onClose={() => setModalState({ type: null })} onSelect={(recipe) => saveMealToPlan(modalState.date, modalState.meal, recipe.id, recipe.title)} />;
+                return <SelectRecipeModal recipes={recipes} meal={state.meal} onClose={() => setModalState({ type: null })} onSelect={(recipe) => saveMealToPlan(state.date, state.meal, recipe.id, recipe.title)} />;
             case 'SHOPPING_LIST':
                  return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={() => setModalState({ type: null })} />;
             default:

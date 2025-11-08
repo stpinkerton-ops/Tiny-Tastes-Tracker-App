@@ -130,6 +130,14 @@
         }
     </style>
     <script>
+        // Polyfill process.env for the browser. This is needed for the
+        // aistudio platform to inject the Gemini API key.
+        if (typeof window.process === 'undefined') {
+          window.process = { env: {} };
+        } else if (typeof window.process.env === 'undefined') {
+          window.process.env = {};
+        }
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
@@ -153,12 +161,7 @@
     "firebase/firestore": "https://aistudiocdn.com/firebase@^12.5.0/firestore",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/",
-    "zod": "https://aistudiocdn.com/zod@^4.1.12",
-    "@genkit-ai/firebase": "https://aistudiocdn.com/@genkit-ai/firebase@^1.22.0",
-    "@genkit-ai/firebase/": "https://aistudiocdn.com/@genkit-ai/firebase@^1.22.0/",
-    "@genkit-ai/googleai": "https://aistudiocdn.com/@genkit-ai/googleai@^1.22.0",
-    "@genkit-ai/core": "https://aistudiocdn.com/@genkit-ai/core@^1.22.0"
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
   }
 }
 </script>

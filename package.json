@@ -12,11 +12,7 @@
     "react": "^19.2.0",
     "@google/genai": "^1.29.0",
     "react-dom": "^19.2.0",
-    "firebase": "^12.5.0",
-    "zod": "^4.1.12",
-    "@genkit-ai/firebase": "^1.22.0",
-    "@genkit-ai/googleai": "^1.22.0",
-    "@genkit-ai/core": "^1.22.0"
+    "firebase": "^12.5.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
