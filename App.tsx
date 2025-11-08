@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types.ts';
 import { totalFoodCount } from './constants.ts';
@@ -258,11 +259,11 @@ const App: React.FC = () => {
         }
     };
 
+    // Fix: Refactor the renderModals function to ensure correct TypeScript type narrowing.
+    // By assigning `modalState` to a local `const`, TypeScript can reliably infer
+    // the specific modal type within each `case` of the `switch` statement,
+    // preventing errors when accessing modal-specific properties.
     const renderModals = () => {
-        // Fix: Assign `modalState` to a local variable `state` to ensure stable type narrowing.
-        // The previous `if (!state.type)` check was not correctly narrowing the type for the
-        // switch statement. By moving the null check into a `case`, TypeScript can
-        // correctly infer the type of `state` for each modal type.
         const state = modalState;
 
         switch (state.type) {
