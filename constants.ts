@@ -6,9 +6,9 @@ export const allFoods: FoodCategory[] = [
         category: "Vegetables",
         color: "bg-green-100", textColor: "text-green-800", borderColor: "border-green-300",
         items: [
-            { name: "ASPARAGUS", emoji: " " }, { name: "BUTTERNUT SQUASH", emoji: "🎃" }, { name: "CAULIFLOWER", emoji: "🥦" },
+            { name: "ASPARAGUS", emoji: " asparagus " }, { name: "BUTTERNUT SQUASH", emoji: "🎃" }, { name: "CAULIFLOWER", emoji: "🥦" },
             { name: "SWEET POTATO", emoji: "🍠" }, { name: "POTATOES", emoji: "🥔" }, { name: "PARSNIPS", emoji: "🥕" },
-            { name: "BELL PEPPERS", emoji: "🫑" }, { name: "BEETS", emoji: "💜" }, { name: "CHAYOTE SQUASH", emoji: "🍐" },
+            { name: "BELL PEPPERS", emoji: "🫑" }, { name: "BEETS", emoji: " beetroot " }, { name: "CHAYOTE SQUASH", emoji: "🍐" },
             { name: "PUMPKIN", emoji: "🎃" }, { name: "CARROTS", emoji: "🥕" }, { name: "ZUCCHINI", emoji: "🥒" },
             { name: "MUSHROOMS", emoji: "🍄" }, { name: "ONION", emoji: "🧅" }, { name: "BRUSSELS SPROUTS", emoji: "🥬" },
             { name: "CORN", emoji: "🌽" }, { name: "CUCUMBER", emoji: "🥒" }, { name: "CELERY", emoji: "🥬" },
@@ -35,9 +35,9 @@ export const allFoods: FoodCategory[] = [
         color: "bg-pink-100", textColor: "text-pink-800", borderColor: "border-pink-300",
         items: [
             { name: "AVOCADO", emoji: "🥑" }, { name: "TOMATOES", emoji: "🍅" }, { name: "ORANGE", emoji: "🍊" },
-            { name: "LEMON & LIME", emoji: "🍋" }, { name: "PAPAYA", emoji: "🥬" }, { name: "PINEAPPLE", emoji: "🍍" },
+            { name: "LEMON & LIME", emoji: "🍋" }, { name: "PAPAYA", emoji: "🥭" }, { name: "PINEAPPLE", emoji: "🍍" },
             { name: "KIWIFRUIT", emoji: "🥝" }, { name: "MANGO", emoji: "🥭" }, { name: "STARFRUIT", emoji: "⭐" },
-            { name: "FIGS", emoji: "💜" }, { name: "BANANA", emoji: "🍌" }, { name: "COCONUT", emoji: "🥥" },
+            { name: "FIGS", emoji: " fig " }, { name: "BANANA", emoji: "🍌" }, { name: "COCONUT", emoji: "🥥" },
             { name: "WATERMELON", emoji: "🍉" }, { name: "HONEYDEW", emoji: "🍈" }, { name: "CANTALOUPE", emoji: "🍈" },
             { name: "APPLESAUCE", emoji: "🍎" }, { name: "RASPBERRIES", emoji: "🍓" }, { name: "BLUEBERRIES", emoji: "🫐" },
             { name: "STRAWBERRIES", emoji: "🍓" }, { name: "GRAPES", emoji: "🍇" }, { name: "PEACHES", emoji: "🍑" },
@@ -48,7 +48,7 @@ export const allFoods: FoodCategory[] = [
         category: "Plant Protein",
         color: "bg-blue-100", textColor: "text-blue-800", borderColor: "border-blue-300",
         items: [
-            { name: "TOFU", emoji: "⬜" }, { name: "EDAMAME", emoji: "🫛" }, { name: "PEANUTS", emoji: "🥜" },
+            { name: "TOFU", emoji: "🧈" }, { name: "EDAMAME", emoji: "🫛" }, { name: "PEANUTS", emoji: "🥜" },
             { name: "ALMONDS", emoji: "🌰" }, { name: "WHITE BEANS", emoji: "🫘" }, { name: "CHICKPEAS", emoji: "🫘" },
             { name: "BLACK BEANS", emoji: "🫘" }, { name: "KIDNEY BEANS", emoji: "🫘" },
             { name: "LENTILS", emoji: "🍚" }, { name: "ALMOND BUTTER", emoji: "🌰" }, { name: "PEANUT BUTTER", emoji: "🥜" }, { name: "SEEDS", emoji: "🌱" }

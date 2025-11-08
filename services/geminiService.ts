@@ -2,13 +2,14 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Recipe } from '../types';
 
-const API_KEY = process.env.API_KEY;
-
-if (!API_KEY) {
-  console.error("Gemini API key is not set. Please set the API_KEY environment variable.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
+const getAiClient = () => {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+        console.error("Gemini API key is not set. Please set the API_KEY environment variable.");
+        throw new Error("Gemini API key is not configured.");
+    }
+    return new GoogleGenAI({ apiKey });
+};
 
 const fileToGenerativePart = async (file: File) => {
   const base64EncodedDataPromise = new Promise<string>((resolve) => {
@@ -23,6 +24,7 @@ const fileToGenerativePart = async (file: File) => {
 
 export const suggestRecipe = async (prompt: string): Promise<Partial<Recipe>> => {
   try {
+    const ai = getAiClient();
     const fullPrompt = `You are a baby-led weaning recipe creator. A parent wants a recipe using the following ingredients: "${prompt}". 
     Create a simple recipe appropriate for a baby 6-12 months old. 
     Respond ONLY with a JSON object in the format {"title": "...", "ingredients": "...", "instructions": "..."}.
@@ -46,6 +48,7 @@ export const suggestRecipe = async (prompt: string): Promise<Partial<Recipe>> =>
 
 export const importRecipeFromImage = async (file: File): Promise<Partial<Recipe>> => {
   try {
+    const ai = getAiClient();
     const imagePart = await fileToGenerativePart(file);
     const textPart = {
       text: `You are a recipe parser. Extract the title, ingredients (as a bulleted list), and instructions (as a numbered list) from this image. Respond ONLY with a JSON object in the format {"title": "...", "ingredients": "...", "instructions": "..."}. If you cannot find one of the fields, return an empty string for it.`
@@ -70,6 +73,7 @@ export const importRecipeFromImage = async (file: File): Promise<Partial<Recipe>
 
 export const categorizeShoppingList = async (ingredients: string[]): Promise<Record<string, string[]>> => {
     try {
+        const ai = getAiClient();
         const prompt = `Categorize this shopping list into the following groups: Produce, Dairy, Meat, Pantry, and Other. Respond ONLY with a JSON object where keys are the categories and values are arrays of ingredients from this list. If an item doesn't fit, put it in 'Other'. \n\n${ingredients.join('\n')}`;
 
         const response = await ai.models.generateContent({
