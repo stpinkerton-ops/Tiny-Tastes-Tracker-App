@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect } from 'https://aistudiocdn.com/react@^19.2.0';
+import React, { useState, useEffect } from 'react';
 import { Recipe, RecipeFilter } from '../../types.ts';
 
 interface RecipeModalProps {

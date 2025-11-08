@@ -1,6 +1,4 @@
-
-
-import React, { useState } from 'https://aistudiocdn.com/react@^19.2.0';
+import React, { useState } from 'react';
 
 interface FamilyIdModalProps {
   onJoin: (id: string) => void;

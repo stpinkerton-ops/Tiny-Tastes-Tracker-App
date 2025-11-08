@@ -21,9 +21,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
-    <!-- Add Babel Standalone for in-browser transpilation -->
-    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
-
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -132,16 +129,37 @@
             color: #0f766e; /* text-teal-700 */
         }
     </style>
-<script type="importmap">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
+    </script>
+    <script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.0",
+    "firebase/app": "https://aistudiocdn.com/firebase@^12.5.0/app",
+    "firebase/auth": "https://aistudiocdn.com/firebase@^12.5.0/auth",
+    "firebase/firestore": "https://aistudiocdn.com/firebase@^12.5.0/firestore",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
   }
 }
 </script>
 </head>
 <body class="h-full">
     <div id="root"></div>
-    <script type="text/babel" data-presets="react,typescript" data-type="module" src="./index.tsx"></script>
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>

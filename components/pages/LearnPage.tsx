@@ -1,6 +1,4 @@
-
-
-import React from 'https://aistudiocdn.com/react@^19.2.0';
+import React from 'react';
 import { researchData } from '../../constants.ts';
 import Accordion from '../ui/Accordion.tsx';
 

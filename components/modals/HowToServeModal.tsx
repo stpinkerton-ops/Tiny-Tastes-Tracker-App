@@ -1,6 +1,4 @@
-
-
-import React from 'https://aistudiocdn.com/react@^19.2.0';
+import React from 'react';
 import { Food } from '../../types.ts';
 import { foodGuideData } from '../../constants.ts';
 import Icon from '../ui/Icon.tsx';

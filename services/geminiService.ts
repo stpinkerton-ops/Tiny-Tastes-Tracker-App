@@ -1,6 +1,4 @@
-
-
-import { GoogleGenAI, Type } from "https://aistudiocdn.com/@google/genai@^1.29.0";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Recipe } from '../types.ts';
 
 const getAiClient = () => {

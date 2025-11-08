@@ -1,6 +1,4 @@
-
-
-import React, { useState, useEffect } from 'https://aistudiocdn.com/react@^19.2.0';
+import React, { useState, useEffect } from 'react';
 import { UserProfile, TriedFoodLog, Food } from '../../types.ts';
 import { recommendationData, guidesData, allFoods } from '../../constants.ts';
 import Accordion from '../ui/Accordion.tsx';
