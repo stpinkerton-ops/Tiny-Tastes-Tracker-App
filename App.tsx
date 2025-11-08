@@ -41,6 +41,25 @@ const App: React.FC = () => {
     const [modalState, setModalState] = useState<ModalState>({ type: null });
 
     useEffect(() => {
+        // **CRITICAL CHECK**: Verify the API key has been replaced.
+        if (firebaseConfig.apiKey.includes("PASTE_YOUR_NEW_BROWSER_KEY_HERE")) {
+            setInitError(
+                <>
+                    <h2 className="text-xl font-bold text-orange-700">Action Required: Update API Key</h2>
+                    <p className="mt-2">The application cannot connect to Firebase because the API key has not been set.</p>
+                    <ol className="list-decimal list-inside text-left mt-2 space-y-1">
+                        <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline">Google Cloud API Credentials Page</a> and create a new key.</li>
+                        <li>Configure its "Website" and "API" restrictions as instructed previously.</li>
+                        <li>Copy the new key.</li>
+                        <li>Open the file <code className="text-sm bg-gray-100 p-1 rounded">firebaseConfig.ts</code> in your project.</li>
+                        <li>Replace the placeholder text with your new API key.</li>
+                    </ol>
+                </>
+            );
+            setLoading(false);
+            return;
+        }
+
         try {
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);

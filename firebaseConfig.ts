@@ -5,7 +5,7 @@
 // It's safe to have this in your client-side code because security is handled
 // by Firebase Security Rules, not this key.
 const firebaseConfig = {
-    apiKey: "AIzaSyA3Qw1oZInrhteTAd7iOK1D2bMHMVCG4EE", // Corrected API Key
+    apiKey: "AIzaSyB7CRygNTAG4FrAgfuxsQNlCD8_-XKVA50", // **ACTION REQUIRED**: Replace this with the new key you just created.
     authDomain: "tiny-tastes-tracker.firebaseapp.com",
     projectId: "tiny-tastes-tracker",
     storageBucket: "tiny-tastes-tracker.firebasestorage.app",
