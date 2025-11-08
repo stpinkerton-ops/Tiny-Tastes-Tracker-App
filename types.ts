@@ -1,3 +1,27 @@
+// This file defines global types available on the `window` object in this platform,
+// as well as the specific types for the application's data models.
+
+// Fix: Define the AIStudio interface inside the `declare global` block to prevent
+// declaration conflicts with other global types that might be present in the
+// development environment, which was causing a subsequent property declaration error.
+declare global {
+  interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+  }
+  
+  interface Window {
+    // The `aistudio` object is provided by the hosting platform for secure
+    // management of the user's Gemini API key.
+    aistudio?: AIStudio;
+    // We polyfill `process.env` so the platform can inject the API key.
+    process?: {
+      env: {
+        API_KEY?: string;
+      };
+    };
+  }
+}
 
 export type Page = 'tracker' | 'ideas' | 'recipes' | 'log' | 'learn';
 export type Filter = 'all' | 'to_try' | 'tried';
@@ -62,6 +86,7 @@ type AddRecipeModalState = { type: 'ADD_RECIPE'; recipeData?: Partial<Recipe> };
 type ViewRecipeModalState = { type: 'VIEW_RECIPE'; recipe: Recipe };
 type ImportRecipeModalState = { type: 'IMPORT_RECIPE' };
 type SuggestRecipeModalState = { type: 'SUGGEST_RECIPE' };
+// Fix: Corrected typo from SHOP_LIST to SHOPPING_LIST to match usage in App.tsx.
 type ShoppingListModalState = { type: 'SHOPPING_LIST' };
 type SelectRecipeModalState = { type: 'SELECT_RECIPE'; date: string; meal: string; };
 type NullModalState = { type: null };

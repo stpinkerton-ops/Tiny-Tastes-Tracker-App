@@ -1,7 +1,7 @@
-
-
 import React, { useState, useEffect, useCallback } from 'react';
+import { initializeApp } from 'firebase/app';
 import {
+  getFirestore,
   doc,
   onSnapshot,
   setDoc,
@@ -12,9 +12,9 @@ import {
   getDoc,
   writeBatch
 } from 'firebase/firestore';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
-import { auth, db } from './firebase.ts';
+import firebaseConfig from './firebaseConfig.ts';
 
 // Import types
 import {
@@ -48,9 +48,6 @@ import AiSuggestModal from './components/modals/AiSuggestModal.tsx';
 import ShoppingListModal from './components/modals/ShoppingListModal.tsx';
 import SelectRecipeModal from './components/modals/SelectRecipeModal.tsx';
 import Icon from './components/ui/Icon.tsx';
-import { AlertTriangle, Copy, LoaderCircle } from 'lucide-react';
-import firebaseConfig from './firebaseConfig.ts';
-
 
 // --- DEFINITIVE FIX: Interactive Configuration Checklist ---
 const ConfigCheckPage: React.FC<{ error: string }> = ({ error }) => {
@@ -70,7 +67,7 @@ const ConfigCheckPage: React.FC<{ error: string }> = ({ error }) => {
         <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50">
             <div className="w-full max-w-3xl text-left bg-red-50 p-6 sm:p-8 rounded-lg shadow-xl border border-red-200">
                 <div className="flex items-center gap-4">
-                    <AlertTriangle className="w-12 h-12 text-red-500 flex-shrink-0" />
+                    <Icon name="alert-triangle" className="w-12 h-12 text-red-500 flex-shrink-0" />
                     <div>
                         <h2 className="text-2xl font-bold text-red-800">Final Configuration Step</h2>
                         <p className="mt-1 text-md text-red-700">Your security settings are working! Please follow this final checklist to grant access to your app.</p>
@@ -78,6 +75,7 @@ const ConfigCheckPage: React.FC<{ error: string }> = ({ error }) => {
                 </div>
 
                 <div className="mt-6 space-y-6 bg-white p-6 rounded-md border border-gray-200">
+                    {/* Step 1 */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-800">Step 1: Open Your API Key Settings</h3>
                         <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block w-full text-center rounded-md bg-blue-600 text-white font-semibold text-sm p-2.5 hover:bg-blue-700">
@@ -85,29 +83,32 @@ const ConfigCheckPage: React.FC<{ error: string }> = ({ error }) => {
                         </a>
                     </div>
                     <hr/>
+                    {/* Step 2 */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-800">Step 2: Find and Edit This Exact API Key</h3>
                         <div className="mt-2 flex items-center">
                             <input type="text" readOnly value={apiKey} className="flex-grow rounded-l-md border-gray-300 bg-gray-100 font-mono text-sm p-2" />
-                            <button onClick={() => copyToClipboard(apiKey)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Copy className="w-5 h-5"/></button>
+                            <button onClick={() => copyToClipboard(apiKey)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Icon name="copy" className="w-5 h-5"/></button>
                         </div>
                     </div>
                     <hr/>
+                    {/* Step 3 */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-800">Step 3: <span className="text-red-600">Clear Old URLs</span> and Add These</h3>
                         <p className="text-sm text-gray-600 mt-1">Under "Website restrictions", **remove all existing URLs** to start clean. Then, click "ADD" and add the two URLs below:</p>
                         <div className="mt-3 space-y-2">
                             <div className="flex items-center">
                                 <input type="text" readOnly value={`${productionUrl}/*`} placeholder="Production URL" className="flex-grow rounded-l-md border-gray-300 bg-gray-100 font-mono text-sm p-2" />
-                                <button onClick={() => copyToClipboard(`${productionUrl}/*`)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Copy className="w-5 h-5"/></button>
+                                <button onClick={() => copyToClipboard(`${productionUrl}/*`)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Icon name="copy" className="w-5 h-5"/></button>
                             </div>
                             <div className="flex items-center">
                                 <input type="text" readOnly value={`${currentUrl}/*`} placeholder="Current Dev URL" className="flex-grow rounded-l-md border-gray-300 bg-gray-100 font-mono text-sm p-2" />
-                                <button onClick={() => copyToClipboard(`${currentUrl}/*`)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Copy className="w-5 h-5"/></button>
+                                <button onClick={() => copyToClipboard(`${currentUrl}/*`)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Icon name="copy" className="w-5 h-5"/></button>
                             </div>
                         </div>
                     </div>
                     <hr/>
+                    {/* Step 4 */}
                     <div>
                         <h3 className="text-lg font-bold text-gray-800">Step 4: Verify API Restrictions</h3>
                         <p className="text-sm text-gray-600 mt-1">Under "API restrictions", ensure **both** of these APIs are in the allowed list:</p>
@@ -145,25 +146,38 @@ function App() {
 
   // Effect for Firebase Authentication
   useEffect(() => {
-    signInAnonymously(auth)
-      .then(() => {
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            setIsFirebaseReady(true);
-          } else {
-             setFirebaseError("Authentication failed unexpectedly. The user object is null.");
-          }
-        });
-      })
-      .catch((error) => {
-        console.error("Firebase Anonymous Sign-In Failed:", error);
-        setFirebaseError(error.message || "An unknown error occurred during Firebase setup.");
-      });
+    try {
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+        
+        signInAnonymously(auth)
+          .then(() => {
+            onAuthStateChanged(auth, (user) => {
+              if (user) {
+                setIsFirebaseReady(true);
+                // Attach db for other effects to use
+                (window as any).db = db; 
+              } else {
+                 setFirebaseError("Authentication failed unexpectedly. The user object is null.");
+              }
+            });
+          })
+          .catch((error) => {
+            console.error("Firebase Anonymous Sign-In Failed:", error);
+            setFirebaseError(error.message || "An unknown error occurred during Firebase setup.");
+          });
+
+    } catch(error: any) {
+        console.error("Firebase Initialization Failed:", error);
+        setFirebaseError(error.message || "A critical error occurred initializing Firebase.");
+    }
   }, []);
 
   // Effects for Firebase data syncing
   useEffect(() => {
-    if (!isFirebaseReady || !familyId) {
+    const db = (window as any).db;
+    if (!isFirebaseReady || !familyId || !db) {
         if(isFirebaseReady && !familyId) setIsLoading(false);
         return;
     }
@@ -201,6 +215,7 @@ function App() {
 
   // Handlers
   const handleJoinFamily = async (id: string) => {
+    const db = (window as any).db;
     const familyDocRef = doc(db, "families", id);
     const familyDoc = await getDoc(familyDocRef);
     if (!familyDoc.exists()) {
@@ -226,12 +241,14 @@ function App() {
 
   const handleSaveProfile = useCallback(async (newProfile: UserProfile) => {
     if (!familyId) return;
+    const db = (window as any).db;
     await setDoc(doc(db, "families", familyId, "data", "profile"), newProfile, { merge: true });
     alert("Profile saved!");
   }, [familyId]);
 
   const handleSaveFoodLog = useCallback(async (foodName: string, data: FoodLogData) => {
     if (!familyId) return;
+    const db = (window as any).db;
     const logDocRef = doc(db, "families", familyId, "triedFoods", foodName);
     await setDoc(logDocRef, data, { merge: true });
     setModalState({ type: null });
@@ -239,6 +256,7 @@ function App() {
   
   const handleSaveRecipe = useCallback(async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
     if (!familyId) return;
+    const db = (window as any).db;
     await addDoc(collection(db, "families", familyId, "recipes"), {
         ...recipeData,
         createdAt: serverTimestamp()
@@ -248,12 +266,14 @@ function App() {
 
   const handleDeleteRecipe = useCallback(async (recipeId: string) => {
     if (!familyId) return;
+    const db = (window as any).db;
     await deleteDoc(doc(db, "families", familyId, "recipes", recipeId));
     setModalState({ type: null });
   }, [familyId]);
 
   const handleUpdateMealPlan = useCallback(async (newMealPlan: MealPlan) => {
     if (!familyId) return;
+    const db = (window as any).db;
     await setDoc(doc(db, "families", familyId, "data", "mealPlan"), newMealPlan);
   }, [familyId]);
   
@@ -287,7 +307,7 @@ function App() {
       return (
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <LoaderCircle className="w-12 h-12 text-teal-600 animate-spin mx-auto" />
+            <Icon name="loader-circle" className="w-12 h-12 text-teal-600 animate-spin" />
             <p className="mt-2 text-lg font-medium text-gray-700">Connecting to your tracker...</p>
           </div>
         </div>
@@ -309,10 +329,13 @@ function App() {
         }
     };
     
-    // FIX: Replaced the if-statement chain with a switch statement to correctly handle type narrowing for the discriminated union `modalState`. The previous if-chain was causing TypeScript errors.
+    // Fix: Refactored the renderModal function to use a single switch statement for the discriminated union.
+    // This provides clearer logic and resolves TypeScript's control-flow analysis errors.
     const renderModal = () => {
         const state = modalState;
         switch (state.type) {
+            case null:
+                return null;
             case 'LOG_FOOD':
                 return <FoodLogModal food={state.food} existingLog={triedFoods.find(f => f.id === state.food.name)} onClose={closeModal} onSave={handleSaveFoodLog} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
             case 'HOW_TO_SERVE':
@@ -329,9 +352,8 @@ function App() {
                 return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={closeModal} />;
             case 'SELECT_RECIPE':
                 return <SelectRecipeModal recipes={recipes} meal={state.meal} onClose={closeModal} onSelect={(recipe) => handleSelectRecipeForPlan(recipe, state.date, state.meal)} />;
-            case null:
-                return null;
             default:
+                // This will never be reached if all types are handled, but it's good practice.
                 return null;
         }
     };
