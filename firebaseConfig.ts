@@ -6,7 +6,7 @@
 // by Firebase Security Rules, not this key.
 const firebaseConfig = {
     // PASTE YOUR NEW "Tiny Tastes Browser Key" HERE
-    apiKey: "AIzaSyB7CRygNTAG4FrAgfuxsQNlCD8_-XKVA50",
+    apiKey: "AlzaSyB7CRygNTAG4FrAgfuxsQNICD8_-XKVA50",
     authDomain: "tiny-tastes-tracker.firebaseapp.com",
     projectId: "tiny-tastes-tracker",
     storageBucket: "tiny-tastes-tracker.firebasestorage.app",

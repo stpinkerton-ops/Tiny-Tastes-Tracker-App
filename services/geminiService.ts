@@ -68,9 +68,10 @@ export const suggestRecipe = async (prompt: string): Promise<Partial<Recipe>> =>
     const client = await getAiClient();
     const fullPrompt = `You are a baby-led weaning recipe creator. A parent wants a recipe using the following ingredients: "${prompt}". Create a simple recipe appropriate for a baby 6-12 months old. Make sure ingredients are a bulleted list and instructions are a numbered list. Respond with only the JSON object.`;
     
+    // FIX: Use simple string for `contents` in single-turn text requests, per guidelines.
     const response: GenerateContentResponse = await client.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        contents: fullPrompt,
         config: {
             responseMimeType: 'application/json',
             responseSchema: RecipeSchema,
@@ -106,9 +107,10 @@ export const importRecipeFromImage = async (file: File): Promise<Partial<Recipe>
         text: "You are a recipe parser. Extract the title, ingredients (as a bulleted list), and instructions (as a numbered list) from this image. If you cannot find one of the fields, return an empty string for it. Respond with only the JSON object."
     };
 
+    // FIX: Use `{ parts: [...] }` for `contents` in single-turn multimodal requests, per guidelines.
     const response: GenerateContentResponse = await client.models.generateContent({
         model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts: [imagePart, textPart] }],
+        contents: { parts: [imagePart, textPart] },
         config: {
             responseMimeType: 'application/json',
             responseSchema: RecipeSchema,
@@ -135,9 +137,10 @@ export const categorizeShoppingList = async (ingredients: string[]): Promise<Rec
         const client = await getAiClient();
         const prompt = `Categorize this shopping list into the following groups: Produce, Dairy & Eggs, Meat & Fish, Pantry, and Other. If an item doesn't fit, put it in 'Other'. \n\n${ingredients.join('\n')}`;
 
+        // FIX: Use simple string for `contents` in single-turn text requests, per guidelines.
         const response: GenerateContentResponse = await client.models.generateContent({
             model: 'gemini-2.5-flash',
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            contents: prompt,
             config: {
                 responseMimeType: 'application/json',
                 responseSchema: {

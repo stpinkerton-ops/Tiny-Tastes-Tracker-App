@@ -1,9 +1,37 @@
 
+import React, { useState, useEffect, useCallback } from 'react';
+import { initializeApp } from 'firebase/app';
+import {
+  getFirestore,
+  doc,
+  onSnapshot,
+  setDoc,
+  collection,
+  addDoc,
+  deleteDoc,
+  serverTimestamp,
+  getDoc,
+  writeBatch
+} from 'firebase/firestore';
 
+import firebaseConfig from './firebaseConfig.ts';
 
-import React, { useState, useEffect } from 'react';
-import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types.ts';
+// Import types
+import {
+  Page,
+  ModalState,
+  TriedFoodLog,
+  Recipe,
+  UserProfile,
+  MealPlan,
+  Food,
+  FoodLogData
+} from './types.ts';
+
+// Import constants
 import { totalFoodCount } from './constants.ts';
+
+// Import components
 import Layout from './components/Layout.tsx';
 import TrackerPage from './components/pages/TrackerPage.tsx';
 import IdeasPage from './components/pages/IdeasPage.tsx';
@@ -19,310 +47,263 @@ import AiImportModal from './components/modals/AiImportModal.tsx';
 import AiSuggestModal from './components/modals/AiSuggestModal.tsx';
 import ShoppingListModal from './components/modals/ShoppingListModal.tsx';
 import SelectRecipeModal from './components/modals/SelectRecipeModal.tsx';
-import firebaseConfig from './firebaseConfig.ts'; // Import the corrected config
-import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, Auth } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, addDoc, Timestamp, deleteDoc, Unsubscribe, Firestore } from 'firebase/firestore';
+import Icon from './components/ui/Icon.tsx';
 
-const APP_ID = "tiny-tastes-tracker";
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-interface FirebaseInstances {
-    auth: Auth;
-    db: Firestore;
-}
+function App() {
+  // State
+  const [familyId, setFamilyId] = useState<string | null>(localStorage.getItem('familyId'));
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [triedFoods, setTriedFoods] = useState<TriedFoodLog[]>([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [mealPlan, setMealPlan] = useState<MealPlan>({});
+  const [currentPage, setCurrentPage] = useState<Page>('tracker');
+  const [modalState, setModalState] = useState<ModalState>({ type: null });
+  const [loading, setLoading] = useState(true);
 
-const App: React.FC = () => {
-    const [firebase, setFirebase] = useState<FirebaseInstances | null>(null);
-    const [initError, setInitError] = useState<React.ReactNode | null>(null);
-    const [familyId, setFamilyId] = useState<string | null>(null);
-    const [currentPage, setCurrentPage] = useState<Page>('tracker');
-    const [triedFoods, setTriedFoods] = useState<TriedFoodLog[]>([]);
-    const [recipes, setRecipes] = useState<Recipe[]>([]);
-    const [mealPlan, setMealPlan] = useState<MealPlan>({});
-    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [modalState, setModalState] = useState<ModalState>({ type: null });
-
-    useEffect(() => {
-        // **CRITICAL CHECK**: Verify the API key has been replaced.
-        if (firebaseConfig.apiKey.includes("PASTE_YOUR_NEW_BROWSER_KEY_HERE")) {
-            setInitError(
-                <>
-                    <h2 className="text-xl font-bold text-orange-700">Action Required: Update API Key</h2>
-                    <p className="mt-2">The application cannot connect to Firebase because the API key has not been set.</p>
-                    <ol className="list-decimal list-inside text-left mt-2 space-y-1">
-                        <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline">Google Cloud API Credentials Page</a> and create a new key.</li>
-                        <li>Configure its "Website" and "API" restrictions as instructed previously.</li>
-                        <li>Copy the new key.</li>
-                        <li>Open the file <code className="text-sm bg-gray-100 p-1 rounded">firebaseConfig.ts</code> in your project.</li>
-                        <li>Replace the placeholder text with your new API key.</li>
-                    </ol>
-                </>
-            );
-            setLoading(false);
-            return;
-        }
-
-        try {
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-            setFirebase({ auth, db });
-
-            const unsubscribe = onAuthStateChanged(auth, user => {
-                if (!user) {
-                    signInAnonymously(auth).catch(error => {
-                        console.error("Anonymous sign-in failed", error);
-                        const errorMessage = error.message || '';
-                        const refererMatch = errorMessage.match(/requests-from-referer-([^)]+)-are-blocked/);
-
-                        if (refererMatch && refererMatch[1]) {
-                            const blockedUrl = refererMatch[1];
-                            setInitError(
-                                <>
-                                    <p>Authentication failed. Your API key's security settings are blocking requests from this website.</p>
-                                    <p className="mt-4"><strong>This is a security setting on Google's servers.</strong> To fix this, you must add the blocked website URL to your API key's "allowlist".</p>
-                                    <ol className="list-decimal list-inside text-left mt-2 space-y-1">
-                                        <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline">Google Cloud API Credentials Page</a>.</li>
-                                        <li>Select your project and click on the API key name.</li>
-                                        <li>Under "Application restrictions," select "HTTP referrers (web sites)".</li>
-                                        <li>Click "ADD" and enter the following URL: <br /> <code className="text-sm bg-gray-100 p-1 rounded break-all"><strong>{blockedUrl}/*</strong></code></li>
-                                        <li>Click Save. It may take a few minutes to update.</li>
-                                    </ol>
-                                </>
-                            );
-                        } else if (error.code === 'auth/api-key-not-valid') {
-                            setInitError(
-                                <>
-                                    <p>Authentication failed because the Firebase API key is not valid.</p>
-                                    <p className="mt-2">This usually happens if the key in your code doesn't match the one in your Firebase project, or it has been deleted.</p>
-                                    <p className="mt-4">Please verify the key in your `firebaseConfig.ts` file is correct and active in the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline">Google Cloud Console</a>.</p>
-                                </>
-                            );
-                        } else {
-                            const friendlyMessage = `Authentication failed: ${error.message}. Please double-check your Firebase API Key and its restrictions in the Google Cloud Console.`;
-                            setInitError(friendlyMessage);
-                        }
-                    });
-                }
-            });
-
-            return () => unsubscribe();
-        } catch (error: any) {
-            console.error("Error initializing Firebase:", error);
-            let detailedError: React.ReactNode = `The app could not start: ${error.message}. Please check your Firebase configuration.`;
-
-            // Check if it's a network/permission error (like a 403 from getProjectConfig)
-            if (error.message && (error.message.includes('403') || error.message.toLowerCase().includes('network request failed'))) {
-                detailedError = (
-                    <>
-                        <p><strong>Firebase failed to initialize.</strong> This is almost always caused by an API key security setting.</p>
-                        <p className="mt-4">Your key is likely blocking requests from this development environment's URL.</p>
-                        <ol className="list-decimal list-inside text-left mt-2 space-y-1">
-                            <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline">Google Cloud API Credentials Page</a>.</li>
-                            <li>Select your project and click on your API key's name.</li>
-                            <li>Under "Application restrictions," select "HTTP referrers (web sites)".</li>
-                            <li>Click "ADD" and enter the current website's URL origin: <br /> <code className="text-sm bg-gray-100 p-1 rounded break-all"><strong>{window.location.origin}/*</strong></code></li>
-                            <li>Click Save. It may take a few minutes to update.</li>
-                        </ol>
-                    </>
-                );
-            }
-            setInitError(detailedError);
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        const storedFamilyId = localStorage.getItem('familyId');
-        if (storedFamilyId) {
-            setFamilyId(storedFamilyId);
-        } else {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (!familyId || !firebase) return;
-        
-        setLoading(true);
-        const { db } = firebase;
-        const listeners: Unsubscribe[] = [];
-
-        const profileDocPath = `/artifacts/${APP_ID}/users/${familyId}/profile/data`;
-        getDoc(doc(db, profileDocPath)).then(docSnap => {
-            if (docSnap.exists()) {
-                setUserProfile(docSnap.data() as UserProfile);
-            }
-        });
-
-        const triedFoodsPath = `/artifacts/${APP_ID}/users/${familyId}/triedFoods`;
-        listeners.push(onSnapshot(collection(db, triedFoodsPath), snapshot => {
-            setTriedFoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TriedFoodLog)));
-        }, () => setLoading(false)));
-
-        const recipesPath = `/artifacts/${APP_ID}/users/${familyId}/recipes`;
-        listeners.push(onSnapshot(collection(db, recipesPath), snapshot => {
-            setRecipes(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)));
-        }));
-
-        const mealPlanPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan`;
-        listeners.push(onSnapshot(collection(db, mealPlanPath), snapshot => {
-            const newMealPlan: MealPlan = {};
-            snapshot.docs.forEach(d => newMealPlan[d.id] = d.data());
-            setMealPlan(newMealPlan);
-        }));
-
-        setLoading(false);
-        
-        return () => {
-            listeners.forEach(unsub => unsub());
-        };
-    }, [familyId, firebase]);
-
-    const handleSetFamilyId = (id: string) => {
-        localStorage.setItem('familyId', id);
-        setFamilyId(id);
-    };
-
-    const handleLogOut = () => {
-        localStorage.removeItem('familyId');
-        setFamilyId(null);
-        setTriedFoods([]);
-        setRecipes([]);
-        setMealPlan({});
-        setUserProfile(null);
-        setCurrentPage('tracker');
-    };
-
-    const saveProfile = async (profile: UserProfile) => {
-        if (!familyId || !firebase) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/profile/data`;
-        await setDoc(doc(firebase.db, docPath), profile, { merge: true });
-        setUserProfile(profile);
-    };
-
-    const saveTriedFood = async (foodName: string, data: FoodLogData) => {
-        if (!familyId || !firebase) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/triedFoods/${foodName}`;
-        await setDoc(doc(firebase.db, docPath), data);
-        setModalState({ type: null });
-    };
-
-    const addRecipe = async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
-        if (!familyId || !firebase) return;
-        const collectionPath = `/artifacts/${APP_ID}/users/${familyId}/recipes`;
-        await addDoc(collection(firebase.db, collectionPath), { ...recipeData, createdAt: Timestamp.now() });
-        setModalState({ type: null });
-    };
-
-    const deleteRecipe = async (recipeId: string) => {
-        if (!familyId || !firebase) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/recipes/${recipeId}`;
-        await deleteDoc(doc(firebase.db, docPath));
-        setModalState({ type: null });
-    };
-    
-    const saveMealToPlan = async (date: string, meal: string, recipeId: string, recipeTitle: string) => {
-        if (!familyId || !firebase) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan/${date}`;
-        await setDoc(doc(firebase.db, docPath), { [meal]: { id: recipeId, title: recipeTitle } }, { merge: true });
-        setModalState({ type: null });
-    };
-
-    const removeMealFromPlan = async (date: string, meal: string) => {
-        if (!familyId || !firebase) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan/${date}`;
-        const docRef = doc(firebase.db, docPath);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            let data = docSnap.data();
-            delete data[meal];
-            await setDoc(docRef, data);
-        }
-    };
-
-    const renderPage = () => {
-        switch (currentPage) {
-            case 'tracker':
-                return <TrackerPage triedFoods={triedFoods} onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })} />;
-            case 'ideas':
-                return <IdeasPage userProfile={userProfile} triedFoods={triedFoods} onSaveProfile={saveProfile} onLogOut={handleLogOut} onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })}/>;
-            case 'recipes':
-                return <RecipesPage recipes={recipes} mealPlan={mealPlan} onShowAddRecipe={() => setModalState({ type: 'ADD_RECIPE' })} onShowImportRecipe={() => setModalState({ type: 'IMPORT_RECIPE' })} onShowSuggestRecipe={() => setModalState({ type: 'SUGGEST_RECIPE' })} onViewRecipe={(recipe) => setModalState({ type: 'VIEW_RECIPE', recipe })} onAddToPlan={(date, meal) => setModalState({ type: 'SELECT_RECIPE', date, meal })} onShowShoppingList={() => setModalState({ type: 'SHOPPING_LIST' })} />;
-            case 'log':
-                return <LogPage triedFoods={triedFoods} babyName={userProfile?.babyName} />;
-            case 'learn':
-                return <LearnPage />;
-            default:
-                return <TrackerPage triedFoods={triedFoods} onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })} />;
-        }
-    };
-
-    // Fix: Refactor the renderModals function to ensure correct TypeScript type narrowing.
-    // By assigning `modalState` to a local `const`, TypeScript can reliably infer
-    // the specific modal type within each `case` of the `switch` statement,
-    // preventing errors when accessing modal-specific properties.
-    const renderModals = () => {
-        const state = modalState;
-
-        switch (state.type) {
-            case null:
-                return null;
-            case 'LOG_FOOD': {
-                const existingLog = triedFoods.find(f => f.id === state.food.name);
-                return <FoodLogModal food={state.food} existingLog={existingLog} onClose={() => setModalState({ type: null })} onSave={saveTriedFood} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
-            }
-            case 'HOW_TO_SERVE':
-                return <HowToServeModal food={state.food} onClose={() => setModalState({ type: 'LOG_FOOD', food: state.food })} />;
-            case 'ADD_RECIPE':
-                return <RecipeModal onClose={() => setModalState({ type: null })} onSave={addRecipe} initialData={state.recipeData} />;
-            case 'VIEW_RECIPE':
-                return <ViewRecipeModal recipe={state.recipe} onClose={() => setModalState({ type: null })} onDelete={deleteRecipe} />;
-            case 'IMPORT_RECIPE':
-                return <AiImportModal onClose={() => setModalState({ type: null })} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
-            case 'SUGGEST_RECIPE':
-                return <AiSuggestModal onClose={() => setModalState({ type: null })} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
-            case 'SELECT_RECIPE':
-                return <SelectRecipeModal recipes={recipes} meal={state.meal} onClose={() => setModalState({ type: null })} onSelect={(recipe) => saveMealToPlan(state.date, state.meal, recipe.id, recipe.title)} />;
-            case 'SHOPPING_LIST':
-                 return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={() => setModalState({ type: null })} />;
-            default:
-                return null;
-        }
-    };
-
-    if (initError) {
-        return (
-            <div className="flex items-center justify-center h-screen p-4">
-                <div className="text-center bg-red-50 p-6 rounded-lg border border-red-200 max-w-lg">
-                    <h1 className="text-2xl font-bold text-red-700">Application Error</h1>
-                    <div className="mt-2 text-gray-700">{initError}</div>
-                </div>
-            </div>
-        );
-    }
-    
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="spinner"></div>
-            </div>
-        );
-    }
-
+  // Effects for Firebase data syncing
+  useEffect(() => {
     if (!familyId) {
-        return <FamilyIdModal onJoin={handleSetFamilyId} />;
+      setLoading(false);
+      return;
     }
 
+    setLoading(true);
+
+    const unsubProfile = onSnapshot(doc(db, "families", familyId, "data", "profile"), (doc) => {
+      setProfile(doc.data() as UserProfile || {});
+    });
+
+    const unsubTriedFoods = onSnapshot(collection(db, "families", familyId, "triedFoods"), (snapshot) => {
+      const foods = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as TriedFoodLog[];
+      setTriedFoods(foods);
+    });
+
+    const unsubRecipes = onSnapshot(collection(db, "families", familyId, "recipes"), (snapshot) => {
+        const recipeData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Recipe[];
+        setRecipes(recipeData);
+    });
+    
+    const unsubMealPlan = onSnapshot(doc(db, "families", familyId, "data", "mealPlan"), (doc) => {
+        setMealPlan(doc.data() as MealPlan || {});
+    });
+
+    // A check to see if all initial data has been loaded.
+    // This is a bit naive, but good enough for this app.
+    const timer = setTimeout(() => setLoading(false), 1500);
+
+    return () => {
+      unsubProfile();
+      unsubTriedFoods();
+      unsubRecipes();
+      unsubMealPlan();
+      clearTimeout(timer);
+    };
+  }, [familyId]);
+
+  // Handlers
+  const handleJoinFamily = async (id: string) => {
+    // Check if family doc exists, if not, create it.
+    const familyDocRef = doc(db, "families", id);
+    const familyDoc = await getDoc(familyDocRef);
+    if (!familyDoc.exists()) {
+        const batch = writeBatch(db);
+        batch.set(doc(db, "families", id, "data", "profile"), {});
+        batch.set(doc(db, "families", id, "data", "mealPlan"), {});
+        await batch.commit();
+    }
+    localStorage.setItem('familyId', id);
+    setFamilyId(id);
+  };
+
+  const handleLogOut = () => {
+    localStorage.removeItem('familyId');
+    setFamilyId(null);
+    setProfile(null);
+    setTriedFoods([]);
+    setRecipes([]);
+    setMealPlan({});
+    setCurrentPage('tracker');
+  };
+
+  const handleSaveProfile = useCallback(async (newProfile: UserProfile) => {
+    if (!familyId) return;
+    await setDoc(doc(db, "families", familyId, "data", "profile"), newProfile, { merge: true });
+    alert("Profile saved!");
+  }, [familyId]);
+
+  const handleSaveFoodLog = useCallback(async (foodName: string, data: FoodLogData) => {
+    if (!familyId) return;
+    const logDocRef = doc(db, "families", familyId, "triedFoods", foodName);
+    await setDoc(logDocRef, data, { merge: true });
+    setModalState({ type: null });
+  }, [familyId]);
+  
+  const handleSaveRecipe = useCallback(async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
+    if (!familyId) return;
+    await addDoc(collection(db, "families", familyId, "recipes"), {
+        ...recipeData,
+        createdAt: serverTimestamp()
+    });
+    setModalState({ type: null });
+  }, [familyId]);
+
+  const handleDeleteRecipe = useCallback(async (recipeId: string) => {
+    if (!familyId) return;
+    await deleteDoc(doc(db, "families", familyId, "recipes", recipeId));
+    setModalState({ type: null });
+  }, [familyId]);
+
+  const handleUpdateMealPlan = useCallback(async (newMealPlan: MealPlan) => {
+    if (!familyId) return;
+    await setDoc(doc(db, "families", familyId, "data", "mealPlan"), newMealPlan);
+  }, [familyId]);
+  
+  const handleAddToPlan = (date: string, meal: string) => {
+    setModalState({ type: 'SELECT_RECIPE', date, meal });
+  };
+
+  const handleSelectRecipeForPlan = (recipe: Recipe, date: string, meal: string) => {
+    const newMealPlan = { ...mealPlan };
+    if (!newMealPlan[date]) {
+        newMealPlan[date] = {};
+    }
+    newMealPlan[date][meal] = { id: recipe.id, title: recipe.title };
+    handleUpdateMealPlan(newMealPlan);
+    setModalState({ type: null });
+  };
+
+  // Modal control
+  const handleFoodClick = (food: Food) => {
+    const existingLog = triedFoods.find(f => f.id === food.name);
+    setModalState({ type: 'LOG_FOOD', food });
+  };
+
+  const closeModal = () => setModalState({ type: null });
+
+  // Render logic
+  if (!familyId) {
+    return <FamilyIdModal onJoin={handleJoinFamily} />;
+  }
+
+  if (loading) {
     return (
-        <>
-            <Layout currentPage={currentPage} setCurrentPage={setCurrentPage} profile={userProfile} familyId={familyId} progress={{ triedCount: triedFoods.length, totalCount: totalFoodCount }}>
-                {renderPage()}
-            </Layout>
-            {renderModals()}
-        </>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+            <Icon name="loader-circle" className="w-12 h-12 text-teal-600 animate-spin" />
+            <p className="mt-2 text-lg font-medium text-gray-700">Loading your tracker...</p>
+        </div>
+      </div>
     );
-};
+  }
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'tracker':
+        return <TrackerPage triedFoods={triedFoods} onFoodClick={handleFoodClick} />;
+      case 'ideas':
+        return <IdeasPage userProfile={profile} triedFoods={triedFoods} onSaveProfile={handleSaveProfile} onLogOut={handleLogOut} onFoodClick={handleFoodClick} />;
+      case 'recipes':
+        return <RecipesPage 
+                    recipes={recipes} 
+                    mealPlan={mealPlan} 
+                    onShowAddRecipe={() => setModalState({ type: 'ADD_RECIPE' })}
+                    onShowImportRecipe={() => setModalState({ type: 'IMPORT_RECIPE' })}
+                    onShowSuggestRecipe={() => setModalState({ type: 'SUGGEST_RECIPE' })}
+                    onViewRecipe={(recipe) => setModalState({ type: 'VIEW_RECIPE', recipe })}
+                    onAddToPlan={handleAddToPlan}
+                    onShowShoppingList={() => setModalState({ type: 'SHOPPING_LIST' })}
+                />;
+      case 'log':
+        return <LogPage triedFoods={triedFoods} babyName={profile?.babyName} />;
+      case 'learn':
+        return <LearnPage />;
+      default:
+        return null;
+    }
+  };
+
+  const renderModal = () => {
+    const state = modalState;
+    if (!state.type) return null;
+
+    // Fix: Replaced switch statement with a series of if-statements.
+    // This resolves a TypeScript type-narrowing issue where the compiler was not
+    // correctly inferring the specific modal state type within each case, leading to
+    // property access errors on the union type.
+    if (state.type === 'LOG_FOOD') {
+      return <FoodLogModal 
+                  food={state.food} 
+                  existingLog={triedFoods.find(f => f.id === state.food.name)}
+                  onClose={closeModal} 
+                  onSave={handleSaveFoodLog} 
+                  onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })}
+              />;
+    }
+    
+    if (state.type === 'HOW_TO_SERVE') {
+      return <HowToServeModal food={state.food} onClose={closeModal} />;
+    }
+    
+    if (state.type === 'ADD_RECIPE') {
+      return <RecipeModal 
+                  onClose={closeModal} 
+                  onSave={handleSaveRecipe} 
+                  initialData={state.recipeData}
+              />;
+    }
+
+    if (state.type === 'VIEW_RECIPE') {
+      return <ViewRecipeModal recipe={state.recipe} onClose={closeModal} onDelete={handleDeleteRecipe} />;
+    }
+    
+    if (state.type === 'IMPORT_RECIPE') {
+      return <AiImportModal 
+                  onClose={closeModal} 
+                  onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} 
+              />;
+    }
+    
+    if (state.type === 'SUGGEST_RECIPE') {
+      return <AiSuggestModal 
+                  onClose={closeModal} 
+                  onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} 
+              />;
+    }
+    
+    if (state.type === 'SHOPPING_LIST') {
+      return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={closeModal} />;
+    }
+    
+    if (state.type === 'SELECT_RECIPE') {
+      return <SelectRecipeModal 
+                  recipes={recipes} 
+                  meal={state.meal}
+                  onClose={closeModal} 
+                  onSelect={(recipe) => handleSelectRecipeForPlan(recipe, state.date, state.meal)} 
+              />;
+    }
+
+    return null;
+  };
+
+  return (
+    <>
+      <Layout 
+        currentPage={currentPage}
+        setCurrentPage={setCurrentPage}
+        profile={profile}
+        familyId={familyId}
+        progress={{ triedCount: triedFoods.length, totalCount: totalFoodCount }}
+      >
+        {renderPage()}
+      </Layout>
+      {renderModal()}
+    </>
+  );
+}
 
 export default App;
