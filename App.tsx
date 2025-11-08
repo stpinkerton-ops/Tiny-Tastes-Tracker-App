@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -262,7 +263,7 @@ function App() {
         }
     };
     
-    // Fix: Replaced the chain of 'if' statements with a 'switch' statement.
+    // Fix: Replaced a chain of `if` statements with a `switch` statement.
     // This provides better type narrowing for the discriminated union `ModalState`,
     // ensuring that properties like `food`, `recipe`, etc., are only accessed
     // on the correct state type, which resolves the TypeScript errors.
