@@ -20,6 +20,10 @@ import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously, onAuthStateChanged, Auth } from 'firebase/auth';
 import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, addDoc, Timestamp, deleteDoc, Unsubscribe, Firestore } from 'firebase/firestore';
 
+// This is the Firebase configuration. The apiKey here is a public identifier for your
+// Firebase project and is NOT the secret key used for the Gemini API.
+// It's safe to have this in your client-side code because security is handled
+// by Firebase Security Rules, not this key.
 const firebaseConfig = {
     apiKey: "AIzaSyA3Qw1oZInrhteTAd7iOK1D2bMHMVCG4EE",
     authDomain: "tiny-tastes-tracker.firebaseapp.com",
