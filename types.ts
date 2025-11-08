@@ -78,22 +78,3 @@ export type ModalState =
   | ShoppingListModalState
   | SelectRecipeModalState
   | NullModalState;
-
-// Add global declarations for platform-specific APIs
-// Fix: Define the AIStudio interface to resolve the type conflict error.
-// Fix: Moved the AIStudio interface into the 'declare global' block to prevent a type conflict error.
-declare global {
-    interface AIStudio {
-        hasSelectedApiKey: () => Promise<boolean>;
-        openSelectKey: () => Promise<void>;
-    }
-
-    interface Window {
-        aistudio?: AIStudio;
-        process: {
-          env: {
-            [key: string]: string | undefined;
-          }
-        }
-    }
-}

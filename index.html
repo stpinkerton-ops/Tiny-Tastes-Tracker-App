@@ -15,15 +15,6 @@
     <meta name="apple-mobile-web-app-title" content="Tiny Tastes">
     <link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzBkOTQ4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIyNCIgaGVpZHRoPSIyNCIgZmlsbD0iI2YwZmRmYSIgcng9IjQiLz48cGF0aCBkPSJNMTIgMkM4LjQgMiA1IDUuNCA1IDkuNWMwIDMuMiAyLjMgNiA1LjIgNi43LjMuMS41LjQuNS43djUuNmMwIC4zLS4yLjUtLjUuNWgtMmMtLjMgMC0uNS4yLS41LjV2MWMwIC4zLjIuNS41LjVoNmMuMyAwIC41LS4yLjUtLjV2LTFjMC0uMy0uMi0uNS0uNS0uNWgtMmMtLjMgMC0uNS0uMi0uNS0uNVYxN2MwLS4zLjItLjYuNS0uNyAyLjktLjcgNS4yLTMuNSA1LjItNi43QzE5IDUuNCAxNS42IDIgMTIgMnoiLz48L3N2Zz4=">
 
-    <!-- Polyfill for process.env to ensure it exists before any other scripts run -->
-    <script>
-        if (typeof window.process === 'undefined') {
-            window.process = { env: {} };
-        } else if (typeof window.process.env === 'undefined') {
-            window.process.env = {};
-        }
-    </script>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -162,7 +153,12 @@
     "firebase/firestore": "https://aistudiocdn.com/firebase@^12.5.0/firestore",
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/"
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/",
+    "zod": "https://aistudiocdn.com/zod@^4.1.12",
+    "@genkit-ai/firebase": "https://aistudiocdn.com/@genkit-ai/firebase@^1.22.0",
+    "@genkit-ai/firebase/": "https://aistudiocdn.com/@genkit-ai/firebase@^1.22.0/",
+    "@genkit-ai/googleai": "https://aistudiocdn.com/@genkit-ai/googleai@^1.22.0",
+    "@genkit-ai/core": "https://aistudiocdn.com/@genkit-ai/core@^1.22.0"
   }
 }
 </script>

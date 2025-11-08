@@ -1,145 +1,68 @@
-import { GoogleGenAI, Type } from "@google/genai";
+
 import { Recipe } from '../types.ts';
 
-const getAiClient = async () => {
-    // In this sandboxed environment, the API key is managed by the aistudio host.
-    // We check if a key has been selected, and if not, we ask the user to select one.
-    if (window.aistudio) {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        if (!hasKey) {
-            await window.aistudio.openSelectKey();
-        }
-    }
-    
-    // After the check, the aistudio host should have populated process.env.API_KEY
-    const apiKey = window.process?.env?.API_KEY;
-    if (!apiKey) {
-        console.error("Gemini API key is not set. Please select a key via the aistudio dialog.");
-        throw new Error("Gemini API key not found. Please refresh and select a key to use AI features.");
-    }
-    return new GoogleGenAI({ apiKey });
-};
-
-const fileToGenerativePart = async (file: File) => {
-  const base64EncodedDataPromise = new Promise<string>((resolve) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-    reader.readAsDataURL(file);
-  });
-  return {
-    inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
-  };
-};
-
-// Fix: Updated to use responseSchema for structured JSON output as per Gemini API guidelines.
-export const suggestRecipe = async (prompt: string): Promise<Partial<Recipe>> => {
-  try {
-    const ai = await getAiClient();
-    const fullPrompt = `You are a baby-led weaning recipe creator. A parent wants a recipe using the following ingredients: "${prompt}". 
-    Create a simple recipe appropriate for a baby 6-12 months old. 
-    Make sure ingredients are a bulleted list and instructions are a numbered list.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [{ parts: [{ text: fullPrompt }] }],
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING },
-            ingredients: { type: Type.STRING },
-            instructions: { type: Type.STRING },
-          },
-          required: ["title", "ingredients", "instructions"],
+// Helper to make authenticated requests to our Genkit flows
+const callGenkitFlow = async (flowName: string, body: any) => {
+    const response = await fetch(`/${flowName}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
         },
-      },
+        body: JSON.stringify(body),
     });
 
-    const text = response.text.trim();
-    const recipeData = JSON.parse(text);
-
-    // AI can sometimes return an array for ingredients despite the schema. Normalize it to a string.
-    if (Array.isArray(recipeData.ingredients)) {
-        recipeData.ingredients = recipeData.ingredients.join('\n');
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Request to ${flowName} failed: ${errorText}`);
     }
-    
-    return recipeData;
+    return response.json();
+};
+
+// Helper to convert a file to a base64 string for JSON transport
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        // Result is "data:image/jpeg;base64,LzlqLzRBQ...". We want just the part after the comma.
+        resolve(reader.result.split(',')[1]);
+      } else {
+        reject(new Error('Failed to read file as base64 string.'));
+      }
+    };
+    reader.onerror = error => reject(error);
+    reader.readAsDataURL(file);
+  });
+};
+
+export const suggestRecipe = async (prompt: string): Promise<Partial<Recipe>> => {
+  try {
+    return await callGenkitFlow('suggestRecipeFlow', prompt);
   } catch (error) {
-    console.error("Error suggesting recipe with AI:", error);
+    console.error("Error suggesting recipe via Genkit:", error);
     throw new Error("Failed to generate recipe from AI.");
   }
 };
 
-// Fix: Updated to use responseSchema for structured JSON output as per Gemini API guidelines.
 export const importRecipeFromImage = async (file: File): Promise<Partial<Recipe>> => {
   try {
-    const ai = await getAiClient();
-    const imagePart = await fileToGenerativePart(file);
-    const textPart = {
-      text: `You are a recipe parser. Extract the title, ingredients (as a bulleted list), and instructions (as a numbered list) from this image. If you cannot find one of the fields, return an empty string for it.`
+    const base64Data = await fileToBase64(file);
+    const body = {
+        base64Data: base64Data,
+        mimeType: file.type,
     };
-
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: { parts: [textPart, imagePart] },
-        config: {
-            responseMimeType: "application/json",
-            responseSchema: {
-              type: Type.OBJECT,
-              properties: {
-                title: { type: Type.STRING },
-                ingredients: { type: Type.STRING },
-                instructions: { type: Type.STRING },
-              },
-              required: ["title", "ingredients", "instructions"],
-            },
-        },
-    });
-    
-    const text = response.text.trim();
-    const recipeData = JSON.parse(text);
-
-    // AI can sometimes return an array for ingredients despite the schema. Normalize it to a string.
-    if (Array.isArray(recipeData.ingredients)) {
-        recipeData.ingredients = recipeData.ingredients.join('\n');
-    }
-
-    return recipeData;
+    return await callGenkitFlow('importRecipeFlow', body);
   } catch (error) {
-    console.error("Error importing recipe from image:", error);
+    console.error("Error importing recipe from image via Genkit:", error);
     throw new Error("Failed to parse recipe from image.");
   }
 };
 
-// Fix: Updated to use responseSchema for structured JSON output as per Gemini API guidelines.
 export const categorizeShoppingList = async (ingredients: string[]): Promise<Record<string, string[]>> => {
     try {
-        const ai = await getAiClient();
-        const prompt = `Categorize this shopping list into the following groups: Produce, Dairy, Meat, Pantry, and Other. If an item doesn't fit, put it in 'Other'. \n\n${ingredients.join('\n')}`;
-
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [{ parts: [{ text: prompt }] }],
-            config: {
-              responseMimeType: "application/json",
-              responseSchema: {
-                type: Type.OBJECT,
-                properties: {
-                  Produce: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  Dairy: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  Meat: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  Pantry: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  Other: { type: Type.ARRAY, items: { type: Type.STRING } },
-                },
-              },
-            },
-        });
-        
-        const text = response.text.trim();
-        return JSON.parse(text);
+        return await callGenkitFlow('categorizeListFlow', ingredients);
     } catch (error) {
-        console.error("Error categorizing shopping list:", error);
+        console.error("Error categorizing shopping list via Genkit:", error);
         throw new Error("Failed to categorize shopping list.");
     }
 };
