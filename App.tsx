@@ -88,8 +88,25 @@ const App: React.FC = () => {
             return () => unsubscribe();
         } catch (error: any) {
             console.error("Error initializing Firebase:", error);
-            const friendlyMessage = `The app could not start: ${error.message}. Please check the Firebase configuration.`;
-            setInitError(friendlyMessage);
+            let detailedError: React.ReactNode = `The app could not start: ${error.message}. Please check your Firebase configuration.`;
+
+            // Check if it's a network/permission error (like a 403 from getProjectConfig)
+            if (error.message && (error.message.includes('403') || error.message.toLowerCase().includes('network request failed'))) {
+                detailedError = (
+                    <>
+                        <p><strong>Firebase failed to initialize.</strong> This is almost always caused by an API key security setting.</p>
+                        <p className="mt-4">Your key is likely blocking requests from this development environment's URL.</p>
+                        <ol className="list-decimal list-inside text-left mt-2 space-y-1">
+                            <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="text-blue-600 font-semibold underline">Google Cloud API Credentials Page</a>.</li>
+                            <li>Select your project and click on your API key's name.</li>
+                            <li>Under "Application restrictions," select "HTTP referrers (web sites)".</li>
+                            <li>Click "ADD" and enter the current website's URL origin: <br /> <code className="text-sm bg-gray-100 p-1 rounded break-all"><strong>{window.location.origin}/*</strong></code></li>
+                            <li>Click Save. It may take a few minutes to update.</li>
+                        </ol>
+                    </>
+                );
+            }
+            setInitError(detailedError);
             setLoading(false);
         }
     }, []);
