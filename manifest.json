@@ -1,0 +1,15 @@
+{
+  "name": "Tiny Tastes Tracker",
+  "short_name": "Tiny Tastes",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#0d9488",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzBkOTQ4OCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iI2YwZmRmYSIgcng9IjQiLz48cGF0aCBkPSJNMTIgMkM4LjQgMiA1IDUuNCA1IDkuNWMwIDMuMiAyLjMgNiA1LjIgNi43LjMuMS41LjQuNS43djUuNmMwIC4zLS4yLjUtLjUuNWgtMmMtLjMgMC0uNS4yLS41LjV2MWMwIC4zLjIuNS41LjVoNmMuMyAwIC41LS4yLjUtLjV2LTFjMC0uMy0uMi0uNS0uNS0uNWgtMmMtLjMgMC0uNS0uMi0uNS0uNVYxN2MwLS4zLjItLjYuNS0uNyAyLjktLjcgNS4yLTMuNSA1LjItNi43QzE5IDUuNCAxNS42IDIgMTIgMnoiLz48L3N2Zz4=",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ]
+}

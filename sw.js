@@ -3,6 +3,18 @@
 // Import Babel Standalone. This will be fetched when the SW installs.
 self.importScripts('https://unpkg.com/@babel/standalone@7.24.7/babel.min.js');
 
+// Make the service worker take control of the page as soon as it's activated.
+self.addEventListener('install', (event) => {
+    // Force the waiting service worker to become the active service worker.
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    // Take control of all clients as soon as the service worker is activated.
+    event.waitUntil(self.clients.claim());
+});
+
+
 self.addEventListener('fetch', (event) => {
     const { request } = event;
     const url = new URL(request.url);
