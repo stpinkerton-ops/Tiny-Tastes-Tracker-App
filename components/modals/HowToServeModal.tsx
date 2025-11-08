@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { Food } from '../../types';
-import { foodGuideData } from '../../constants';
-import Icon from '../ui/Icon';
+import { Food } from '../../types.ts';
+import { foodGuideData } from '../../constants.ts';
+import Icon from '../ui/Icon.tsx';
 
 interface HowToServeModalProps {
   food: Food;

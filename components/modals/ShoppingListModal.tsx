@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Recipe, MealPlan } from '../../types';
-import { categorizeShoppingList } from '../../services/geminiService';
-import Icon from '../ui/Icon';
+import { Recipe, MealPlan } from '../../types.ts';
+import { categorizeShoppingList } from '../../services/geminiService.ts';
+import Icon from '../ui/Icon.tsx';
 
 interface ShoppingListModalProps {
     recipes: Recipe[];

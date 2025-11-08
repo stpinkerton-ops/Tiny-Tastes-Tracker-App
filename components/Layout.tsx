@@ -1,7 +1,7 @@
 
 import React from 'react';
-import { Page, UserProfile } from '../types';
-import Icon from './ui/Icon';
+import { Page, UserProfile } from '../types.ts';
+import Icon from './ui/Icon.tsx';
 
 interface LayoutProps {
   currentPage: Page;

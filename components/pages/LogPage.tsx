@@ -1,8 +1,8 @@
 
 import React from 'react';
-import { TriedFoodLog } from '../../types';
-import { allFoods } from '../../constants';
-import Icon from '../ui/Icon';
+import { TriedFoodLog } from '../../types.ts';
+import { allFoods } from '../../constants.ts';
+import Icon from '../ui/Icon.tsx';
 
 interface LogPageProps {
   triedFoods: TriedFoodLog[];

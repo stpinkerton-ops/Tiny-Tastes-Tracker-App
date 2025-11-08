@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
-import { Recipe, RecipeFilter, MealPlan } from '../../types';
-import Icon from '../ui/Icon';
+import { Recipe, RecipeFilter, MealPlan } from '../../types.ts';
+import Icon from '../ui/Icon.tsx';
 
 interface RecipesPageProps {
     recipes: Recipe[];

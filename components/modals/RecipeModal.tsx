@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Recipe, RecipeFilter } from '../../types';
+import { Recipe, RecipeFilter } from '../../types.ts';
 
 interface RecipeModalProps {
   onClose: () => void;

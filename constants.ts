@@ -1,5 +1,5 @@
 
-import { FoodCategory } from './types';
+import { FoodCategory } from './types.ts';
 
 export const allFoods: FoodCategory[] = [
     {
