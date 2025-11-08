@@ -1,11 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Recipe } from '../types.ts';
 
-// Polyfill 'process' for browser environment to avoid ReferenceError from the SDK
-if (typeof window.process === 'undefined') {
-  window.process = { env: {} };
-}
-
 const getAiClient = async () => {
     // In this sandboxed environment, the API key is managed by the aistudio host.
     // We check if a key has been selected, and if not, we ask the user to select one.
@@ -17,7 +12,7 @@ const getAiClient = async () => {
     }
     
     // After the check, the aistudio host should have populated process.env.API_KEY
-    const apiKey = window.process.env.API_KEY;
+    const apiKey = window.process?.env?.API_KEY;
     if (!apiKey) {
         console.error("Gemini API key is not set. Please select a key via the aistudio dialog.");
         throw new Error("Gemini API key not found. Please refresh and select a key to use AI features.");
