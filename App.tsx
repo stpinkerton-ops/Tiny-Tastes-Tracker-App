@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { initializeApp } from 'firebase/app';
 import {
@@ -263,14 +264,16 @@ function App() {
         }
     };
     
-    // Fix: Replaced a chain of `if` statements with a `switch` statement.
-    // This provides better type narrowing for the discriminated union `ModalState`,
-    // ensuring that properties like `food`, `recipe`, etc., are only accessed
-    // on the correct state type, which resolves the TypeScript errors.
+    // Fix: Re-structured the modal rendering logic to use an early return for the `null`
+    // state. This helps TypeScript's control flow analysis correctly narrow the
+    // `modalState` type within the `switch` statement, resolving errors where properties
+    // like `food` or `recipe` were not found.
     const renderModal = () => {
+        if (modalState.type === null) {
+            return null;
+        }
+        
         switch (modalState.type) {
-            case null:
-                return null;
             case 'LOG_FOOD':
                 return <FoodLogModal food={modalState.food} existingLog={triedFoods.find(f => f.id === modalState.food.name)} onClose={closeModal} onSave={handleSaveFoodLog} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
             case 'HOW_TO_SERVE':
