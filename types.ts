@@ -1,4 +1,5 @@
 
+
 export type Page = 'tracker' | 'ideas' | 'recipes' | 'log' | 'learn';
 export type Filter = 'all' | 'to_try' | 'tried';
 export type RecipeFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -62,6 +63,7 @@ type AddRecipeModalState = { type: 'ADD_RECIPE'; recipeData?: Partial<Recipe> };
 type ViewRecipeModalState = { type: 'VIEW_RECIPE'; recipe: Recipe };
 type ImportRecipeModalState = { type: 'IMPORT_RECIPE' };
 type SuggestRecipeModalState = { type: 'SUGGEST_RECIPE' };
+// Fix: Corrected typo from SHOP_LIST to SHOPPING_LIST to match usage in App.tsx.
 type ShoppingListModalState = { type: 'SHOPPING_LIST' };
 type SelectRecipeModalState = { type: 'SELECT_RECIPE'; date: string; meal: string; };
 type NullModalState = { type: null };
@@ -76,3 +78,21 @@ export type ModalState =
   | ShoppingListModalState
   | SelectRecipeModalState
   | NullModalState;
+
+// Add global declarations for platform-specific APIs
+// Fix: Define the AIStudio interface to resolve the type conflict error.
+interface AIStudio {
+    hasSelectedApiKey: () => Promise<boolean>;
+    openSelectKey: () => Promise<void>;
+}
+
+declare global {
+    interface Window {
+        aistudio?: AIStudio;
+        process: {
+          env: {
+            [key: string]: string | undefined;
+          }
+        }
+    }
+}
