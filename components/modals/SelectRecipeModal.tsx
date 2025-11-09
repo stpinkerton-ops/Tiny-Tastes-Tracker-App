@@ -16,6 +16,11 @@ const SelectRecipeModal: React.FC<SelectRecipeModalProps> = ({ recipes, meal, on
         return recipe.mealTypes.includes(meal as any);
     });
 
+    const getIngredientsPreview = (ingredients: string): string => {
+        if (!ingredients) return '';
+        return ingredients.replace(/\n/g, ', ');
+    };
+
     return (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-[500]">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto">
@@ -28,7 +33,7 @@ const SelectRecipeModal: React.FC<SelectRecipeModalProps> = ({ recipes, meal, on
                         filteredRecipes.map(recipe => (
                             <button key={recipe.id} onClick={() => onSelect(recipe)} className="block w-full text-left p-3 rounded-md transition-colors hover:bg-teal-50">
                                 <h4 className="font-medium text-teal-600">{recipe.title}</h4>
-                                <p className="text-sm text-gray-600 line-clamp-2">{recipe.ingredients.replace(/\n/g, ', ')}</p>
+                                <p className="text-sm text-gray-600 line-clamp-2">{getIngredientsPreview(recipe.ingredients)}</p>
                             </button>
                         ))
                     ) : (

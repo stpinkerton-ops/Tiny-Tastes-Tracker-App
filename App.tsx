@@ -1,4 +1,6 @@
 
+
+
 import React, { useState, useEffect } from 'react';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types';
 import { totalFoodCount } from './constants';
@@ -159,7 +161,24 @@ const App: React.FC = () => {
         
         setUserProfile(getFromStorage<UserProfile | null>('profile', null));
         setTriedFoods(getFromStorage<TriedFoodLog[]>('triedFoods', []));
-        setRecipes(getFromStorage<Recipe[]>('recipes', []));
+        
+        // Sanitize recipes on load to prevent runtime errors from old data formats
+        const rawRecipes = getFromStorage<any[]>('recipes', []);
+        const cleanedRecipes = rawRecipes.map((r): Recipe | null => {
+            if (!r || typeof r !== 'object') return null;
+            return {
+                ...r,
+                id: r.id || crypto.randomUUID(),
+                title: r.title || 'Untitled Recipe',
+                ingredients: Array.isArray(r.ingredients) ? r.ingredients.join('\n') : (typeof r.ingredients === 'string' ? r.ingredients : ''),
+                instructions: Array.isArray(r.instructions) ? r.instructions.join('\n') : (typeof r.instructions === 'string' ? r.instructions : ''),
+                tags: Array.isArray(r.tags) ? r.tags : [],
+                mealTypes: Array.isArray(r.mealTypes) ? r.mealTypes : [],
+                createdAt: r.createdAt || new Date().toISOString(),
+            };
+        }).filter((r): r is Recipe => r !== null);
+        setRecipes(cleanedRecipes);
+
         setMealPlan(getFromStorage<MealPlan>('mealPlan', {}));
 
         setLoading(false);
@@ -204,16 +223,14 @@ const App: React.FC = () => {
         }
     };
 
-    // FIX: Using a single switch statement for the discriminated union `modalState`
-    // allows TypeScript's control flow analysis to correctly narrow the type in each case,
-    // resolving errors where properties were not found on the union type.
     const renderModals = () => {
-        switch (modalState.type) {
+        // FIX: Assign modalState to a local constant to help TypeScript with type narrowing.
+        const modal = modalState;
+        switch (modal.type) {
             case 'LOG_FOOD': {
-                const { food } = modalState;
-                const existingLog = triedFoods.find(f => f.id === food.name);
+                const existingLog = triedFoods.find(f => f.id === modal.food.name);
                 return <FoodLogModal 
-                    food={food} 
+                    food={modal.food} 
                     existingLog={existingLog}
                     onClose={() => setModalState({ type: null })} 
                     onSave={saveTriedFood}
@@ -221,16 +238,24 @@ const App: React.FC = () => {
                 />;
             }
             case 'HOW_TO_SERVE': {
-                const { food } = modalState;
-                return <HowToServeModal food={food} onClose={() => setModalState({ type: 'LOG_FOOD', food: food })} />;
+                return <HowToServeModal 
+                    food={modal.food} 
+                    onClose={() => setModalState({ type: 'LOG_FOOD', food: modal.food })} 
+                />;
             }
             case 'ADD_RECIPE': {
-                const { recipeData } = modalState;
-                return <RecipeModal onClose={() => setModalState({ type: null })} onSave={addRecipe} initialData={recipeData} />;
+                return <RecipeModal 
+                    onClose={() => setModalState({ type: null })} 
+                    onSave={addRecipe} 
+                    initialData={modal.recipeData} 
+                />;
             }
             case 'VIEW_RECIPE': {
-                const { recipe } = modalState;
-                return <ViewRecipeModal recipe={recipe} onClose={() => setModalState({ type: null })} onDelete={deleteRecipe} />;
+                return <ViewRecipeModal 
+                    recipe={modal.recipe} 
+                    onClose={() => setModalState({ type: null })} 
+                    onDelete={deleteRecipe} 
+                />;
             }
             case 'IMPORT_RECIPE':
                 return <AiImportModal 
@@ -243,12 +268,11 @@ const App: React.FC = () => {
                     onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })}
                 />;
             case 'SELECT_RECIPE': {
-                const { date, meal } = modalState;
                 return <SelectRecipeModal 
                     recipes={recipes} 
-                    meal={meal}
+                    meal={modal.meal}
                     onClose={() => setModalState({ type: null })}
-                    onSelect={(recipe) => saveMealToPlan(date, meal, recipe.id, recipe.title)}
+                    onSelect={(recipe) => saveMealToPlan(modal.date, modal.meal, recipe.id, recipe.title)}
                 />;
             }
             case 'SHOPPING_LIST':

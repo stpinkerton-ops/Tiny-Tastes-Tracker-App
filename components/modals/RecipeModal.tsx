@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Recipe, RecipeFilter } from '../../types';
 
@@ -21,8 +20,9 @@ const RecipeModal: React.FC<RecipeModalProps> = ({ onClose, onSave, initialData 
         if (initialData) {
             setTitle(initialData.title || '');
             setSelectedMealTypes(new Set(initialData.mealTypes || []));
-            setIngredients(initialData.ingredients || '');
-            setInstructions(initialData.instructions || '');
+            // Ensure ingredients and instructions are always strings
+            setIngredients(Array.isArray(initialData.ingredients) ? initialData.ingredients.join('\n') : initialData.ingredients || '');
+            setInstructions(Array.isArray(initialData.instructions) ? initialData.instructions.join('\n') : initialData.instructions || '');
             setTags((initialData.tags || []).join(', '));
         }
     }, [initialData]);

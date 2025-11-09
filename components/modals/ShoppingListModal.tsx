@@ -1,16 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { Recipe, MealPlan } from '../../types';
 import { categorizeShoppingList } from '../../services/geminiService';
 import Icon from '../ui/Icon';
 
 const parseIngredients = (text: string) => {
-    if (!text) return [];
+    if (typeof text !== 'string') return [];
     return text.split('\n')
         .map(line => line.trim().replace(/^[\*\-\s]|^(\d+\.\s)/, ''))
         .filter(line => line.length > 0);
 };
 
-// FIX: Define the props interface for the component.
 interface ShoppingListModalProps {
     recipes: Recipe[];
     mealPlan: MealPlan;
@@ -39,9 +39,9 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
 
                 if (dayPlan) {
                     for (const meal of Object.values(dayPlan)) {
-                        if (meal && typeof meal === 'object' && 'id' in meal && typeof (meal as any).id === 'string') {
+                         if (meal && typeof meal === 'object' && 'id' in meal && typeof (meal as any).id === 'string') {
                             const recipe = recipes.find(r => r.id === (meal as { id: string }).id);
-                            if (recipe) {
+                            if (recipe && recipe.ingredients) {
                                 parseIngredients(recipe.ingredients).forEach(ing => allIngredients.add(ing));
                             }
                         }

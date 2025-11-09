@@ -87,7 +87,7 @@ const LearnPage: React.FC = () => {
                             {aiResponse.sources
                                 .filter(source => source && source.web && source.web.uri)
                                 .map((source, index) => (
-                                <li key={source.web.uri} id={`source-${index + 1}`} className="text-gray-600">
+                                <li key={`${source.web.uri}-${index}`} id={`source-${index + 1}`} className="text-gray-600">
                                     <a href={source.web.uri} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
                                         {source.web.title || source.web.uri}
                                     </a>

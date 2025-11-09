@@ -10,8 +10,10 @@ interface ViewRecipeModalProps {
 }
 
 const formatRecipeText = (text: string) => {
-    if (!text) return '';
-    return text.split('\n').map((line, index) => {
+    const lines = typeof text === 'string' ? text.split('\n') : [];
+    if (lines.length === 0) return null;
+
+    return lines.map((line, index) => {
         line = line.trim();
         if (line.startsWith('-') || line.startsWith('*')) {
             return <li key={index} className="ml-4">{line.substring(1).trim()}</li>;
@@ -46,9 +48,9 @@ const ViewRecipeModal: React.FC<ViewRecipeModalProps> = ({ recipe, onClose, onDe
                         )) : <span className="text-xs text-gray-500">No tags</span>}
                     </div>
                     <h3 className="text-lg font-medium text-gray-800">Ingredients</h3>
-                    <div className="mb-4 list-disc list-inside">{formatRecipeText(recipe.ingredients)}</div>
+                    <div className="mb-4 list-disc list-inside">{formatRecipeText(recipe.ingredients) || <p>No ingredients listed.</p>}</div>
                     <h3 className="text-lg font-medium text-gray-800">Instructions</h3>
-                    <div className="list-decimal list-inside">{formatRecipeText(recipe.instructions)}</div>
+                    <div className="list-decimal list-inside">{formatRecipeText(recipe.instructions) || <p>No instructions provided.</p>}</div>
                 </div>
                 <div className="flex justify-end space-x-3 p-4 border-t bg-gray-50 rounded-b-lg">
                     <button type="button" onClick={handleDelete} className="inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">Delete Recipe</button>

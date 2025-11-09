@@ -32,6 +32,11 @@ const MyRecipesView: React.FC<{ recipes: Recipe[], onViewRecipe: (recipe: Recipe
         return mealTypes.length === 0 || mealTypes.includes(filter);
     }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
+    const getIngredientsPreview = (ingredients: string): string => {
+        if (!ingredients) return 'No ingredients listed.';
+        return ingredients.replace(/\n/g, ', ');
+    };
+
     return (
         <div>
             <div className="flex flex-wrap gap-2 mb-4">
@@ -54,7 +59,7 @@ const MyRecipesView: React.FC<{ recipes: Recipe[], onViewRecipe: (recipe: Recipe
                                 <span key={tag} className={`text-xs ${['breakfast', 'lunch', 'dinner', 'snack'].includes(tag) ? 'bg-blue-100 text-blue-700' : 'bg-teal-100 text-teal-700'} px-2 py-0.5 rounded-full`}>{tag}</span>
                             ))}
                         </div>
-                        <p className="text-sm text-gray-600 mt-3 line-clamp-2">{recipe.ingredients.replace(/\n/g, ', ')}</p>
+                        <p className="text-sm text-gray-600 mt-3 line-clamp-2">{getIngredientsPreview(recipe.ingredients)}</p>
                     </button>
                 )) : (
                     <p className="text-center text-gray-500 py-10">
