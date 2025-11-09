@@ -3,18 +3,19 @@ import { Recipe, MealPlan } from '../../types';
 import { categorizeShoppingList } from '../../services/geminiService';
 import Icon from '../ui/Icon';
 
-interface ShoppingListModalProps {
-    recipes: Recipe[];
-    mealPlan: MealPlan;
-    onClose: () => void;
-}
-
 const parseIngredients = (text: string) => {
     if (!text) return [];
     return text.split('\n')
         .map(line => line.trim().replace(/^[\*\-\s]|^(\d+\.\s)/, ''))
         .filter(line => line.length > 0);
 };
+
+// FIX: Define the props interface for the component.
+interface ShoppingListModalProps {
+    recipes: Recipe[];
+    mealPlan: MealPlan;
+    onClose: () => void;
+}
 
 const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan, onClose }) => {
     const [categorizedList, setCategorizedList] = useState<Record<string, string[]>>({});
@@ -38,10 +39,11 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
 
                 if (dayPlan) {
                     for (const meal of Object.values(dayPlan)) {
-                        // Fix for: Property 'id' does not exist on type 'unknown'.
-                        const recipe = recipes.find(r => r.id === (meal as { id: string }).id);
-                        if (recipe) {
-                            parseIngredients(recipe.ingredients).forEach(ing => allIngredients.add(ing));
+                        if (meal && typeof meal === 'object' && 'id' in meal && typeof (meal as any).id === 'string') {
+                            const recipe = recipes.find(r => r.id === (meal as { id: string }).id);
+                            if (recipe) {
+                                parseIngredients(recipe.ingredients).forEach(ing => allIngredients.add(ing));
+                            }
                         }
                     }
                 }
@@ -56,7 +58,28 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
 
             try {
                 const categories = await categorizeShoppingList(ingredientsList);
-                setCategorizedList(categories);
+                
+                // Robust validation of AI response
+                const validatedCategories: Record<string, string[]> = {};
+                let isValid = true;
+                if (typeof categories === 'object' && categories !== null && !Array.isArray(categories)) {
+                    for (const [key, value] of Object.entries(categories)) {
+                        if (Array.isArray(value) && value.every(item => typeof item === 'string')) {
+                            validatedCategories[key] = value;
+                        } else {
+                            isValid = false;
+                            break;
+                        }
+                    }
+                } else {
+                    isValid = false;
+                }
+                
+                if (isValid && Object.keys(validatedCategories).length > 0) {
+                    setCategorizedList(validatedCategories);
+                } else {
+                    throw new Error("AI response was not in the expected format.");
+                }
             } catch (err) {
                 setError("AI categorization failed. Displaying a simple list.");
                 setCategorizedList({ 'All Items': ingredientsList });
@@ -89,7 +112,6 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
                                 <div key={category}>
                                     <h4 className="text-md font-semibold text-teal-700 mt-3">{category}</h4>
                                     <ul className="list-disc list-outside pl-5 space-y-1">
-                                        {/* Fix for: Property 'map' does not exist on type 'unknown'. */}
                                         {(items as string[]).map((item, index) => <li key={index}>{item}</li>)}
                                     </ul>
                                 </div>

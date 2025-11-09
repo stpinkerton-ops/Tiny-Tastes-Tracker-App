@@ -204,17 +204,13 @@ const App: React.FC = () => {
         }
     };
 
+    // FIX: Using a single switch statement for the discriminated union `modalState`
+    // allows TypeScript's control flow analysis to correctly narrow the type in each case,
+    // resolving errors where properties were not found on the union type.
     const renderModals = () => {
-        // FIX: An explicit check for null before the switch helps TypeScript's type narrowing.
-        if (modalState.type === null) {
-            return null;
-        }
-
-        const modal = modalState;
-        
-        switch (modal.type) {
+        switch (modalState.type) {
             case 'LOG_FOOD': {
-                const { food } = modal;
+                const { food } = modalState;
                 const existingLog = triedFoods.find(f => f.id === food.name);
                 return <FoodLogModal 
                     food={food} 
@@ -225,15 +221,15 @@ const App: React.FC = () => {
                 />;
             }
             case 'HOW_TO_SERVE': {
-                const { food } = modal;
+                const { food } = modalState;
                 return <HowToServeModal food={food} onClose={() => setModalState({ type: 'LOG_FOOD', food: food })} />;
             }
             case 'ADD_RECIPE': {
-                const { recipeData } = modal;
+                const { recipeData } = modalState;
                 return <RecipeModal onClose={() => setModalState({ type: null })} onSave={addRecipe} initialData={recipeData} />;
             }
             case 'VIEW_RECIPE': {
-                const { recipe } = modal;
+                const { recipe } = modalState;
                 return <ViewRecipeModal recipe={recipe} onClose={() => setModalState({ type: null })} onDelete={deleteRecipe} />;
             }
             case 'IMPORT_RECIPE':
@@ -247,7 +243,7 @@ const App: React.FC = () => {
                     onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })}
                 />;
             case 'SELECT_RECIPE': {
-                const { date, meal } = modal;
+                const { date, meal } = modalState;
                 return <SelectRecipeModal 
                     recipes={recipes} 
                     meal={meal}
@@ -261,6 +257,8 @@ const App: React.FC = () => {
                     mealPlan={mealPlan}
                     onClose={() => setModalState({ type: null })}
                 />;
+            case null:
+                return null;
             default:
                 return null;
         }

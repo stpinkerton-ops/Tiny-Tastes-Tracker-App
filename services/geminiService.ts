@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Recipe } from '../types';
 
@@ -86,4 +85,32 @@ export const categorizeShoppingList = async (ingredients: string[]): Promise<Rec
         console.error("Error categorizing shopping list:", error);
         throw new Error("Failed to categorize shopping list.");
     }
+};
+
+export const askResearchAssistant = async (question: string): Promise<{ answer: string; sources: any[] }> => {
+  try {
+    const systemInstruction = `You are a research assistant for parents, specializing in baby-led weaning and infant nutrition. Your answers must be based on information from peer-reviewed journals, scientific studies, and meta-analyses found via Google Search.
+Synthesize the findings into a clear, easy-to-understand answer for a non-scientific audience.
+Cite sources in the text using bracketed numbers, like [1], corresponding to the order of the sources found.
+If you absolutely must use a source that is not a peer-reviewed study (like a reputable health organization's website), you MUST explicitly flag it in the text, for example: ...according to the World Health Organization (source not peer-reviewed) [2].
+The final response should be in Markdown format.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: question,
+      config: {
+        systemInstruction: systemInstruction,
+        tools: [{googleSearch: {}}],
+      },
+    });
+
+    const answer = response.text;
+    const sources = response.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+    
+    return { answer, sources };
+
+  } catch (error) {
+    console.error("Error asking research assistant:", error);
+    throw new Error("Failed to get an answer from the research assistant.");
+  }
 };
