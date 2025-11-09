@@ -30,7 +30,7 @@ const MyRecipesView: React.FC<{ recipes: Recipe[], onViewRecipe: (recipe: Recipe
         if (filter === 'all') return true;
         const mealTypes = recipe.mealTypes || [];
         return mealTypes.length === 0 || mealTypes.includes(filter);
-    }).sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+    }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     return (
         <div>

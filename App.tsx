@@ -1,6 +1,6 @@
 
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types';
 import { totalFoodCount } from './constants';
 import Layout from './components/Layout';
@@ -18,33 +18,6 @@ import AiImportModal from './components/modals/AiImportModal';
 import AiSuggestModal from './components/modals/AiSuggestModal';
 import ShoppingListModal from './components/modals/ShoppingListModal';
 import SelectRecipeModal from './components/modals/SelectRecipeModal';
-import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, Auth } from 'firebase/auth';
-import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, addDoc, Timestamp, deleteDoc, Unsubscribe, Firestore } from 'firebase/firestore';
-
-// IMPORTANT: Replace with your Firebase project configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyA3Qw1oZInrhteTAd7iOK1D2bMHMVCG4EE",
-    authDomain: "tiny-tastes-tracker.firebaseapp.com",
-    projectId: "tiny-tastes-tracker",
-    storageBucket: "tiny-tastes-tracker.firebasestorage.app",
-    messagingSenderId: "87950543929",
-    appId: "1:87950543929:web:561607c04f73369f6411e8",
-};
-
-const APP_ID = "tiny-tastes-tracker";
-
-let firebaseApp: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-
-try {
-    firebaseApp = initializeApp(firebaseConfig);
-    auth = getAuth(firebaseApp);
-    db = getFirestore(firebaseApp);
-} catch (error) {
-    console.error("Error initializing Firebase:", error);
-}
 
 
 const App: React.FC = () => {
@@ -75,54 +48,83 @@ const App: React.FC = () => {
 
     const saveProfile = async (profile: UserProfile) => {
         if (!familyId) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/profile/data`;
-        await setDoc(doc(db, docPath), profile, { merge: true });
+        localStorage.setItem(`tiny-tastes-tracker-${familyId}-profile`, JSON.stringify(profile));
         setUserProfile(profile);
     };
 
     const saveTriedFood = async (foodName: string, data: FoodLogData) => {
         if (!familyId) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/triedFoods/${foodName}`;
-        await setDoc(doc(db, docPath), data);
+        const newTriedFoods = [...triedFoods.filter(f => f.id !== foodName), { id: foodName, ...data }];
+        localStorage.setItem(`tiny-tastes-tracker-${familyId}-triedFoods`, JSON.stringify(newTriedFoods));
+        setTriedFoods(newTriedFoods);
         setModalState({ type: null });
     };
 
     const addRecipe = async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
         if (!familyId) return;
-        const collectionPath = `/artifacts/${APP_ID}/users/${familyId}/recipes`;
-        await addDoc(collection(db, collectionPath), {
+        const newRecipe: Recipe = {
             ...recipeData,
-            createdAt: Timestamp.now()
-        });
+            id: crypto.randomUUID(),
+            createdAt: new Date().toISOString(),
+        };
+        const updatedRecipes = [...recipes, newRecipe];
+        localStorage.setItem(`tiny-tastes-tracker-${familyId}-recipes`, JSON.stringify(updatedRecipes));
+        setRecipes(updatedRecipes);
         setModalState({ type: null });
     };
 
     const deleteRecipe = async (recipeId: string) => {
         if (!familyId) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/recipes/${recipeId}`;
-        await deleteDoc(doc(db, docPath));
+        const updatedRecipes = recipes.filter(r => r.id !== recipeId);
+        localStorage.setItem(`tiny-tastes-tracker-${familyId}-recipes`, JSON.stringify(updatedRecipes));
+        setRecipes(updatedRecipes);
+        
+        // Also remove this recipe from meal plan
+        const updatedMealPlan = { ...mealPlan };
+        let mealPlanChanged = false;
+        Object.keys(updatedMealPlan).forEach(date => {
+            Object.keys(updatedMealPlan[date]).forEach(meal => {
+                if (updatedMealPlan[date][meal].id === recipeId) {
+                    delete updatedMealPlan[date][meal];
+                    mealPlanChanged = true;
+                }
+            });
+            if (Object.keys(updatedMealPlan[date]).length === 0) {
+                delete updatedMealPlan[date];
+            }
+        });
+
+        if (mealPlanChanged) {
+            localStorage.setItem(`tiny-tastes-tracker-${familyId}-mealPlan`, JSON.stringify(updatedMealPlan));
+            setMealPlan(updatedMealPlan);
+        }
         setModalState({ type: null });
     };
     
     const saveMealToPlan = async (date: string, meal: string, recipeId: string, recipeTitle: string) => {
         if (!familyId) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan/${date}`;
-        await setDoc(doc(db, docPath), { [meal]: { id: recipeId, title: recipeTitle } }, { merge: true });
+        const updatedMealPlan = { ...mealPlan };
+        if (!updatedMealPlan[date]) {
+            updatedMealPlan[date] = {};
+        }
+        updatedMealPlan[date][meal] = { id: recipeId, title: recipeTitle };
+        localStorage.setItem(`tiny-tastes-tracker-${familyId}-mealPlan`, JSON.stringify(updatedMealPlan));
+        setMealPlan(updatedMealPlan);
         setModalState({ type: null });
     };
 
     const removeMealFromPlan = async (date: string, meal: string) => {
         if (!familyId) return;
-        const docPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan/${date}`;
-        const docRef = doc(db, docPath);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-            let data = docSnap.data();
-            delete data[meal];
-            await setDoc(docRef, data);
+        const updatedMealPlan = { ...mealPlan };
+        if (updatedMealPlan[date]?.[meal]) {
+            delete updatedMealPlan[date][meal];
+            if (Object.keys(updatedMealPlan[date]).length === 0) {
+                delete updatedMealPlan[date];
+            }
+            localStorage.setItem(`tiny-tastes-tracker-${familyId}-mealPlan`, JSON.stringify(updatedMealPlan));
+            setMealPlan(updatedMealPlan);
         }
     };
-
 
     useEffect(() => {
         const storedFamilyId = localStorage.getItem('familyId');
@@ -131,57 +133,38 @@ const App: React.FC = () => {
         } else {
             setLoading(false);
         }
-
-        const unsubscribe = onAuthStateChanged(auth, user => {
-            if (!user) {
-                signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed", error));
-            }
-        });
-
-        return () => unsubscribe();
     }, []);
 
     useEffect(() => {
-        if (!familyId) return;
+        if (!familyId) {
+            // Clear data when logged out
+            setTriedFoods([]);
+            setRecipes([]);
+            setMealPlan({});
+            setUserProfile(null);
+            setLoading(false);
+            return;
+        }
         
         setLoading(true);
-        const listeners: Unsubscribe[] = [];
-
-        // Profile listener
-        const profileDocPath = `/artifacts/${APP_ID}/users/${familyId}/profile/data`;
-        getDoc(doc(db, profileDocPath)).then(docSnap => {
-            if (docSnap.exists()) {
-                setUserProfile(docSnap.data() as UserProfile);
+        
+        const getFromStorage = <T,>(key: string, defaultValue: T): T => {
+            try {
+                const storedValue = localStorage.getItem(`tiny-tastes-tracker-${familyId}-${key}`);
+                return storedValue ? JSON.parse(storedValue) : defaultValue;
+            } catch (error) {
+                console.error(`Error parsing ${key} from localStorage`, error);
+                return defaultValue;
             }
-        });
-
-        // Tried Foods listener
-        const triedFoodsPath = `/artifacts/${APP_ID}/users/${familyId}/triedFoods`;
-        listeners.push(onSnapshot(collection(db, triedFoodsPath), snapshot => {
-            setTriedFoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TriedFoodLog)));
-        }));
-
-        // Recipes listener
-        const recipesPath = `/artifacts/${APP_ID}/users/${familyId}/recipes`;
-        listeners.push(onSnapshot(collection(db, recipesPath), snapshot => {
-            setRecipes(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)));
-        }));
-
-        // Meal Plan listener
-        const mealPlanPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan`;
-        listeners.push(onSnapshot(collection(db, mealPlanPath), snapshot => {
-            const newMealPlan: MealPlan = {};
-            snapshot.docs.forEach(d => {
-                newMealPlan[d.id] = d.data();
-            });
-            setMealPlan(newMealPlan);
-        }));
+        };
+        
+        setUserProfile(getFromStorage<UserProfile | null>('profile', null));
+        setTriedFoods(getFromStorage<TriedFoodLog[]>('triedFoods', []));
+        setRecipes(getFromStorage<Recipe[]>('recipes', []));
+        setMealPlan(getFromStorage<MealPlan>('mealPlan', {}));
 
         setLoading(false);
         
-        return () => {
-            listeners.forEach(unsub => unsub());
-        };
     }, [familyId]);
 
     const renderPage = () => {
@@ -216,12 +199,13 @@ const App: React.FC = () => {
     };
 
     const renderModals = () => {
-        if (!modalState.type) return null;
+        // FIX: Assign modalState to a local constant to aid TypeScript's type narrowing within the switch statement.
+        const modal = modalState;
+        if (!modal.type) return null;
 
-        switch (modalState.type) {
+        switch (modal.type) {
             case 'LOG_FOOD': {
-                // FIX: Destructure food from modalState to help TypeScript with type narrowing.
-                const { food } = modalState;
+                const { food } = modal;
                 const existingLog = triedFoods.find(f => f.id === food.name);
                 return <FoodLogModal 
                     food={food} 
@@ -232,18 +216,15 @@ const App: React.FC = () => {
                 />;
             }
             case 'HOW_TO_SERVE': {
-                // FIX: Destructure food from modalState to help TypeScript with type narrowing and avoid stale closures.
-                const { food } = modalState;
+                const { food } = modal;
                 return <HowToServeModal food={food} onClose={() => setModalState({ type: 'LOG_FOOD', food: food })} />;
             }
             case 'ADD_RECIPE': {
-                // FIX: Destructure recipeData from modalState to help TypeScript with type narrowing.
-                const { recipeData } = modalState;
+                const { recipeData } = modal;
                 return <RecipeModal onClose={() => setModalState({ type: null })} onSave={addRecipe} initialData={recipeData} />;
             }
             case 'VIEW_RECIPE': {
-                // FIX: Destructure recipe from modalState to help TypeScript with type narrowing.
-                const { recipe } = modalState;
+                const { recipe } = modal;
                 return <ViewRecipeModal recipe={recipe} onClose={() => setModalState({ type: null })} onDelete={deleteRecipe} />;
             }
             case 'IMPORT_RECIPE':
@@ -257,8 +238,7 @@ const App: React.FC = () => {
                     onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })}
                 />;
             case 'SELECT_RECIPE': {
-                // FIX: Destructure date and meal from modalState to help TypeScript with type narrowing and avoid stale closures.
-                const { date, meal } = modalState;
+                const { date, meal } = modal;
                 return <SelectRecipeModal 
                     recipes={recipes} 
                     meal={meal}
