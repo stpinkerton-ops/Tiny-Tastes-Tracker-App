@@ -1,5 +1,5 @@
 
-export type Page = 'tracker' | 'ideas' | 'recipes' | 'log' | 'learn';
+export type Page = 'tracker' | 'recommendations' | 'recipes' | 'learn' | 'profile';
 export type Filter = 'all' | 'to_try' | 'tried';
 export type RecipeFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
