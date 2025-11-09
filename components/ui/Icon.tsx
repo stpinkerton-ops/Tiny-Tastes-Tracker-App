@@ -1,61 +1,43 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 
-// This is a global declaration for the lucide library loaded from the CDN
 declare global {
-    interface Window {
-        lucide: {
-            icons: {
-                [key: string]: [string, { [key: string]: any }, [string, { [key: string]: any }][]];
-            };
-            createIcons: () => void;
-        };
-    }
+  interface Window {
+    lucide: {
+      createIcons: () => void;
+    };
+  }
 }
 
-interface IconProps extends React.SVGProps<SVGSVGElement> {
-    name: string;
-    color?: string;
-    size?: number | string;
+interface IconProps {
+  name: string;
+  className?: string;
 }
 
-const Icon: React.FC<IconProps> = ({ name, color = 'currentColor', size = 24, className = '', ...props }) => {
-    if (typeof window === 'undefined' || !window.lucide || !window.lucide.icons || !window.lucide.icons[name]) {
-        console.warn(`[Icon] Icon "${name}" not found.`);
-        // Render a fallback "alert-circle" icon
-        return (
-            <svg
-                width={size}
-                height={size}
-                className={className}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                {...props}
-            >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-        );
+const Icon: React.FC<IconProps> = ({ name, className = '' }) => {
+  const ref = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      // Create the placeholder `<i>` tag as a string with the necessary attributes.
+      // Lucide will find this element by its `data-lucide` attribute.
+      const iconPlaceholder = `<i data-lucide="${name}" class="${className}"></i>`;
+      
+      // We set the innerHTML of our container span.
+      ref.current.innerHTML = iconPlaceholder;
+      
+      // We then call `createIcons()` which will replace the `<i>` tag with an `<svg>`.
+      // Since React only manages the `<span>`, it doesn't crash when the content changes.
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
     }
+    // This effect runs whenever the icon name or its styling changes.
+  }, [name, className]);
 
-    const [tag, defaultAttrs, children] = window.lucide.icons[name];
-
-    return React.createElement(
-        tag,
-        {
-            ...defaultAttrs,
-            width: size,
-            height: size,
-            stroke: color,
-            className: `lucide lucide-${name} ${className}`,
-            ...props,
-        },
-        ...children.map(([childTag, childAttrs], i) => React.createElement(childTag, { key: i, ...childAttrs }))
-    );
+  // The container `<span>` holds the icon. We apply the className here as well
+  // so that layout and color styles are applied immediately, preventing flicker.
+  // The generated SVG will also receive these classes from the placeholder `<i>`.
+  return <span ref={ref} className={className} />;
 };
 
 export default Icon;

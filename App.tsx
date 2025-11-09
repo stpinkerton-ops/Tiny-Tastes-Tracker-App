@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types';
 import { totalFoodCount } from './constants';
@@ -223,9 +224,16 @@ const App: React.FC = () => {
         }
     };
 
+    // FIX: Refactored to handle null state check before the switch statement.
+    // This helps TypeScript correctly narrow the type of `modal` within each case block,
+    // resolving property access errors on the discriminated union.
     const renderModals = () => {
-        // FIX: Assign modalState to a local constant to help TypeScript with type narrowing.
         const modal = modalState;
+
+        if (modal.type === null) {
+            return null;
+        }
+
         switch (modal.type) {
             case 'LOG_FOOD': {
                 const existingLog = triedFoods.find(f => f.id === modal.food.name);
@@ -281,8 +289,6 @@ const App: React.FC = () => {
                     mealPlan={mealPlan}
                     onClose={() => setModalState({ type: null })}
                 />;
-            case null:
-                return null;
             default:
                 return null;
         }
