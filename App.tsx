@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types';
 import { totalFoodCount } from './constants';
@@ -177,7 +176,14 @@ const App: React.FC = () => {
             case 'tracker':
                 return <TrackerPage triedFoods={triedFoods} onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })} />;
             case 'ideas':
-                return <IdeasPage userProfile={userProfile} triedFoods={triedFoods} onSaveProfile={saveProfile} onLogOut={handleLogOut} onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })}/>;
+                return <IdeasPage 
+                    userProfile={userProfile} 
+                    triedFoods={triedFoods} 
+                    onSaveProfile={saveProfile} 
+                    onLogOut={handleLogOut} 
+                    onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })}
+                    familyId={familyId}
+                />;
             case 'recipes':
                 return <RecipesPage 
                     recipes={recipes} 
@@ -201,9 +207,11 @@ const App: React.FC = () => {
     const renderModals = () => {
         // FIX: Assign modalState to a local constant to aid TypeScript's type narrowing within the switch statement.
         const modal = modalState;
-        if (!modal.type) return null;
 
+        // FIX: Handle the null state within the switch for better type narrowing.
         switch (modal.type) {
+            case null:
+                return null;
             case 'LOG_FOOD': {
                 const { food } = modal;
                 const existingLog = triedFoods.find(f => f.id === food.name);

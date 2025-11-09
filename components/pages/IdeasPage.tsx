@@ -11,6 +11,7 @@ interface IdeasPageProps {
   onSaveProfile: (profile: UserProfile) => void;
   onLogOut: () => void;
   onFoodClick: (food: Food) => void;
+  familyId: string | null;
 }
 
 const calculateAge = (dateString: string) => {
@@ -52,7 +53,7 @@ const FoodCard: React.FC<{ food: Food; isTried: boolean; onClick: () => void }> 
     );
   };
 
-const IdeasPage: React.FC<IdeasPageProps> = ({ userProfile, triedFoods, onSaveProfile, onLogOut, onFoodClick }) => {
+const IdeasPage: React.FC<IdeasPageProps> = ({ userProfile, triedFoods, onSaveProfile, onLogOut, onFoodClick, familyId }) => {
     const [name, setName] = useState(userProfile?.babyName || '');
     const [birthDate, setBirthDate] = useState(userProfile?.birthDate || '');
     const [allergies, setAllergies] = useState(userProfile?.knownAllergies || '');
@@ -78,6 +79,76 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ userProfile, triedFoods, onSavePr
         setPediatricianApproved(true);
         onSaveProfile({ ...userProfile, pediatricianApproved: true });
     }
+
+    const handleExport = () => {
+        if (!familyId) {
+            alert("No Family ID found. Cannot export data.");
+            return;
+        }
+        try {
+            const dataToExport = {
+                profile: JSON.parse(localStorage.getItem(`tiny-tastes-tracker-${familyId}-profile`) || 'null'),
+                triedFoods: JSON.parse(localStorage.getItem(`tiny-tastes-tracker-${familyId}-triedFoods`) || '[]'),
+                recipes: JSON.parse(localStorage.getItem(`tiny-tastes-tracker-${familyId}-recipes`) || '[]'),
+                mealPlan: JSON.parse(localStorage.getItem(`tiny-tastes-tracker-${familyId}-mealPlan`) || '{}'),
+            };
+            const jsonString = JSON.stringify(dataToExport, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const href = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = href;
+            link.download = `tiny-tastes-backup-${familyId}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(href);
+        } catch (error) {
+            console.error("Failed to export data:", error);
+            alert("Sorry, there was an error exporting your data.");
+        }
+    };
+
+    const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (!familyId) {
+            alert("No Family ID found. Cannot import data.");
+            return;
+        }
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result;
+                if (typeof text !== 'string') throw new Error("File is not readable");
+                const importedData = JSON.parse(text);
+
+                if (!('profile' in importedData && 'triedFoods' in importedData && 'recipes' in importedData && 'mealPlan' in importedData)) {
+                    throw new Error("Invalid data file format. The file must be a valid export from Tiny Tastes Tracker.");
+                }
+
+                if (window.confirm("This will overwrite all existing data for this Family ID. This action cannot be undone. Are you sure you want to continue?")) {
+                    localStorage.setItem(`tiny-tastes-tracker-${familyId}-profile`, JSON.stringify(importedData.profile || null));
+                    localStorage.setItem(`tiny-tastes-tracker-${familyId}-triedFoods`, JSON.stringify(importedData.triedFoods || []));
+                    localStorage.setItem(`tiny-tastes-tracker-${familyId}-recipes`, JSON.stringify(importedData.recipes || []));
+                    localStorage.setItem(`tiny-tastes-tracker-${familyId}-mealPlan`, JSON.stringify(importedData.mealPlan || {}));
+                    
+                    alert("Data imported successfully! The app will now reload to apply the changes.");
+                    window.location.reload();
+                }
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Unknown error';
+                alert(`Error importing data: ${message}`);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    };
+    
+    const triggerImport = () => {
+        document.getElementById('import-file-input')?.click();
+    };
+
 
     const renderRecommendations = () => {
         if (!birthDate) {
@@ -176,9 +247,35 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ userProfile, triedFoods, onSavePr
             <button onClick={handleSave} className="mt-4 w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
                 Save Profile
             </button>
-            <button onClick={onLogOut} className="mt-4 w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-                Log Out / Change Family ID
-            </button>
+            
+            <hr className="my-6" />
+
+            <h3 className="text-xl font-semibold text-gray-800 mb-4">Account & Data</h3>
+            <div className="space-y-3">
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                    <h4 className="font-medium text-gray-800">Sync Data Between Devices</h4>
+                    <p className="text-sm text-gray-600 mt-1">To use your data on another device (like your phone or computer), export it here and then import it on the other device.</p>
+                    <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button onClick={handleExport} className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            <Icon name="download" className="w-4 h-4" /> Export Data
+                        </button>
+                        <button onClick={triggerImport} className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            <Icon name="upload" className="w-4 h-4" /> Import Data
+                        </button>
+                        <input type="file" id="import-file-input" accept=".json" onChange={handleImport} className="hidden" />
+                    </div>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-lg border">
+                    <h4 className="font-medium text-gray-800">Log Out</h4>
+                    <p className="text-sm text-gray-600 mt-1">Log out or switch to a different Family ID.</p>
+                    <div className="mt-3">
+                        <button onClick={onLogOut} className="w-full sm:w-auto inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                            <Icon name="log-out" className="w-4 h-4" /> Log Out / Change Family ID
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <hr className="my-6" />
             <h3 className="text-xl font-semibold text-gray-800 mb-4">Food Recommendations</h3>
             <div className="mt-6 space-y-3">
