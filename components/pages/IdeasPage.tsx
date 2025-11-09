@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { UserProfile, TriedFoodLog, Food } from '../../types';
 import { recommendationData, guidesData, allFoods } from '../../constants';
@@ -254,13 +253,13 @@ const IdeasPage: React.FC<IdeasPageProps> = ({ userProfile, triedFoods, onSavePr
             <div className="space-y-3">
                 <div className="p-4 bg-gray-50 rounded-lg border">
                     <h4 className="font-medium text-gray-800">Sync Data Between Devices</h4>
-                    <p className="text-sm text-gray-600 mt-1">To use your data on another device (like your phone or computer), export it here and then import it on the other device.</p>
+                    <p className="text-sm text-gray-600 mt-1">To sync, save your data to a cloud service like iCloud or Google Drive on one device, then load that same file on another.</p>
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <button onClick={handleExport} className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                            <Icon name="download" className="w-4 h-4" /> Export Data
+                            <Icon name="save" className="w-4 h-4" /> Save a Backup File
                         </button>
                         <button onClick={triggerImport} className="w-full inline-flex justify-center items-center gap-2 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
-                            <Icon name="upload" className="w-4 h-4" /> Import Data
+                            <Icon name="folder-open" className="w-4 h-4" /> Load from Backup File
                         </button>
                         <input type="file" id="import-file-input" accept=".json" onChange={handleImport} className="hidden" />
                     </div>

@@ -205,13 +205,14 @@ const App: React.FC = () => {
     };
 
     const renderModals = () => {
-        // FIX: Assign modalState to a local constant to aid TypeScript's type narrowing within the switch statement.
-        const modal = modalState;
+        // FIX: An explicit check for null before the switch helps TypeScript's type narrowing.
+        if (modalState.type === null) {
+            return null;
+        }
 
-        // FIX: Handle the null state within the switch for better type narrowing.
+        const modal = modalState;
+        
         switch (modal.type) {
-            case null:
-                return null;
             case 'LOG_FOOD': {
                 const { food } = modal;
                 const existingLog = triedFoods.find(f => f.id === food.name);
