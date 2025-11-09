@@ -224,7 +224,7 @@ export const researchData = [
     },
     {
         title: "2. Introducing Top Allergens",
-        icon: "peanut",
+        icon: "bean",
         content: `<p>Current guidelines have changed: experts now recommend introducing top allergenic foods <strong>early and often</strong> (after 6 months and once a few other foods have been tolerated) to help *prevent* allergies.</p><p>The top 9 allergens account for ~90% of food allergies:</p><ol class="list-decimal list-outside space-y-2 pl-5"><li>Cow's Milk (e.g., in yogurt, cheese)</li><li>Egg (fully cooked, e.g., scrambled or in a muffin)</li><li>Peanuts (NEVER whole. Offer as a thin paste on toast or watered down.)</li><li>Tree Nuts (e.g., almond, walnut. Offer as nut butter, same as peanuts.)</li><li>Fish (e.g., soft, flaky salmon)</li><li>Shellfish (e.g., minced shrimp)</li><li>Soy (e.g., tofu, edamame)</li><li>Wheat (e.g., toast, pasta)</li><li>Sesame (e.g., tahini swirled into yogurt)</li></ol><p><strong>SafetyProtocol:</strong> Introduce one allergen at a time. Wait 3-5 days before introducing another new allergen to watch for any reaction (hives, vomiting, swelling, wheezing). Once an allergen is successfully introduced, keep offering it regularly (e.g., 2-3 times a week) to maintain tolerance.</p>`
     },
     {
