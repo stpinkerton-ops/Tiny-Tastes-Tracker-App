@@ -1,6 +1,7 @@
+
 import React from 'react';
-import { Recipe } from '../../types.ts';
-import Icon from '../ui/Icon.tsx';
+import { Recipe } from '../../types';
+import Icon from '../ui/Icon';
 
 interface ViewRecipeModalProps {
   recipe: Recipe;

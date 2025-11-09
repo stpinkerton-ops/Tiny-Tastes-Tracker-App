@@ -1,375 +1,309 @@
+
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { initializeApp } from 'firebase/app';
-import {
-  getFirestore,
-  doc,
-  onSnapshot,
-  setDoc,
-  collection,
-  addDoc,
-  deleteDoc,
-  serverTimestamp,
-  getDoc,
-  writeBatch
-} from 'firebase/firestore';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types';
+import { totalFoodCount } from './constants';
+import Layout from './components/Layout';
+import TrackerPage from './components/pages/TrackerPage';
+import IdeasPage from './components/pages/IdeasPage';
+import RecipesPage from './components/pages/RecipesPage';
+import LogPage from './components/pages/LogPage';
+import LearnPage from './components/pages/LearnPage';
+import FamilyIdModal from './components/modals/FamilyIdModal';
+import FoodLogModal from './components/modals/FoodLogModal';
+import HowToServeModal from './components/modals/HowToServeModal';
+import RecipeModal from './components/modals/RecipeModal';
+import ViewRecipeModal from './components/modals/ViewRecipeModal';
+import AiImportModal from './components/modals/AiImportModal';
+import AiSuggestModal from './components/modals/AiSuggestModal';
+import ShoppingListModal from './components/modals/ShoppingListModal';
+import SelectRecipeModal from './components/modals/SelectRecipeModal';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, signInAnonymously, onAuthStateChanged, Auth } from 'firebase/auth';
+import { getFirestore, collection, onSnapshot, doc, getDoc, setDoc, addDoc, Timestamp, deleteDoc, Unsubscribe, Firestore } from 'firebase/firestore';
 
-import firebaseConfig from './firebaseConfig.ts';
-
-// Import types
-import {
-  Page,
-  ModalState,
-  TriedFoodLog,
-  Recipe,
-  UserProfile,
-  MealPlan,
-  Food,
-  FoodLogData
-} from './types.ts';
-
-// Import constants
-import { totalFoodCount } from './constants.ts';
-
-// Import components
-import Layout from './components/Layout.tsx';
-import TrackerPage from './components/pages/TrackerPage.tsx';
-import IdeasPage from './components/pages/IdeasPage.tsx';
-import RecipesPage from './components/pages/RecipesPage.tsx';
-import LogPage from './components/pages/LogPage.tsx';
-import LearnPage from './components/pages/LearnPage.tsx';
-import FamilyIdModal from './components/modals/FamilyIdModal.tsx';
-import FoodLogModal from './components/modals/FoodLogModal.tsx';
-import HowToServeModal from './components/modals/HowToServeModal.tsx';
-import RecipeModal from './components/modals/RecipeModal.tsx';
-import ViewRecipeModal from './components/modals/ViewRecipeModal.tsx';
-import AiImportModal from './components/modals/AiImportModal.tsx';
-import AiSuggestModal from './components/modals/AiSuggestModal.tsx';
-import ShoppingListModal from './components/modals/ShoppingListModal.tsx';
-import SelectRecipeModal from './components/modals/SelectRecipeModal.tsx';
-import Icon from './components/ui/Icon.tsx';
-
-// --- DEFINITIVE FIX: Interactive Configuration Checklist ---
-const ConfigCheckPage: React.FC<{ error: string }> = ({ error }) => {
-    const apiKey = firebaseConfig.apiKey;
-    const currentUrl = window.location.origin;
-    const productionUrl = "https://stpinkerton-ops.github.io";
-
-    const copyToClipboard = (text: string) => {
-        navigator.clipboard.writeText(text).then(() => {
-            alert("Copied to clipboard!");
-        }, () => {
-            alert("Failed to copy.");
-        });
-    };
-
-    return (
-        <div className="flex items-center justify-center min-h-screen p-4 bg-gray-50">
-            <div className="w-full max-w-3xl text-left bg-red-50 p-6 sm:p-8 rounded-lg shadow-xl border border-red-200">
-                <div className="flex items-center gap-4">
-                    <Icon name="alert-triangle" className="w-12 h-12 text-red-500 flex-shrink-0" />
-                    <div>
-                        <h2 className="text-2xl font-bold text-red-800">Final Configuration Step</h2>
-                        <p className="mt-1 text-md text-red-700">Your security settings are working! Please follow this final checklist to grant access to your app.</p>
-                    </div>
-                </div>
-
-                <div className="mt-6 space-y-6 bg-white p-6 rounded-md border border-gray-200">
-                    {/* Step 1 */}
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-800">Step 1: Open Your API Key Settings</h3>
-                        <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="mt-2 inline-block w-full text-center rounded-md bg-blue-600 text-white font-semibold text-sm p-2.5 hover:bg-blue-700">
-                            Open Google Cloud API Credentials
-                        </a>
-                    </div>
-                    <hr/>
-                    {/* Step 2 */}
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-800">Step 2: Find and Edit This Exact API Key</h3>
-                        <div className="mt-2 flex items-center">
-                            <input type="text" readOnly value={apiKey} className="flex-grow rounded-l-md border-gray-300 bg-gray-100 font-mono text-sm p-2" />
-                            <button onClick={() => copyToClipboard(apiKey)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Icon name="copy" className="w-5 h-5"/></button>
-                        </div>
-                    </div>
-                    <hr/>
-                    {/* Step 3 */}
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-800">Step 3: <span className="text-red-600">Clear Old URLs</span> and Add These</h3>
-                        <p className="text-sm text-gray-600 mt-1">Under "Website restrictions", **remove all existing URLs** to start clean. Then, click "ADD" and add the two URLs below:</p>
-                        <div className="mt-3 space-y-2">
-                            <div className="flex items-center">
-                                <input type="text" readOnly value={`${productionUrl}/*`} placeholder="Production URL" className="flex-grow rounded-l-md border-gray-300 bg-gray-100 font-mono text-sm p-2" />
-                                <button onClick={() => copyToClipboard(`${productionUrl}/*`)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Icon name="copy" className="w-5 h-5"/></button>
-                            </div>
-                            <div className="flex items-center">
-                                <input type="text" readOnly value={`${currentUrl}/*`} placeholder="Current Dev URL" className="flex-grow rounded-l-md border-gray-300 bg-gray-100 font-mono text-sm p-2" />
-                                <button onClick={() => copyToClipboard(`${currentUrl}/*`)} className="bg-gray-200 p-2 rounded-r-md hover:bg-gray-300"><Icon name="copy" className="w-5 h-5"/></button>
-                            </div>
-                        </div>
-                    </div>
-                    <hr/>
-                    {/* Step 4 */}
-                    <div>
-                        <h3 className="text-lg font-bold text-gray-800">Step 4: Verify API Restrictions</h3>
-                        <p className="text-sm text-gray-600 mt-1">Under "API restrictions", ensure **both** of these APIs are in the allowed list:</p>
-                        <ul className="mt-2 list-disc list-inside text-sm text-gray-800 bg-gray-100 p-3 rounded-md">
-                            <li><code className="font-semibold">Cloud Firestore API</code></li>
-                            <li><code className="font-semibold">Identity Toolkit API</code> (for login)</li>
-                        </ul>
-                    </div>
-                </div>
-                 <div className="text-center">
-                    <button onClick={() => window.location.reload()} className="mt-8 inline-flex items-center px-8 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
-                        I've Saved My Changes, Now Refresh
-                    </button>
-                    <p className="text-xs text-gray-500 mt-2">(Note: It can take up to 5 minutes for settings to take effect)</p>
-                 </div>
-            </div>
-        </div>
-    );
+// IMPORTANT: Replace with your Firebase project configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyA3Qw1oZInrhteTAd7iOK1D2bMHMVCG4EE",
+    authDomain: "tiny-tastes-tracker.firebaseapp.com",
+    projectId: "tiny-tastes-tracker",
+    storageBucket: "tiny-tastes-tracker.firebasestorage.app",
+    messagingSenderId: "87950543929",
+    appId: "1:87950543929:web:561607c04f73369f6411e8",
 };
 
+const APP_ID = "tiny-tastes-tracker";
 
-function App() {
-  // State
-  const [familyId, setFamilyId] = useState<string | null>(localStorage.getItem('familyId'));
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [triedFoods, setTriedFoods] = useState<TriedFoodLog[]>([]);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [mealPlan, setMealPlan] = useState<MealPlan>({});
-  const [currentPage, setCurrentPage] = useState<Page>('tracker');
-  const [modalState, setModalState] = useState<ModalState>({ type: null });
-  
-  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
-  const [firebaseError, setFirebaseError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+let firebaseApp: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
-  // Effect for Firebase Authentication
-  useEffect(() => {
-    try {
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        
-        signInAnonymously(auth)
-          .then(() => {
-            onAuthStateChanged(auth, (user) => {
-              if (user) {
-                setIsFirebaseReady(true);
-                // Attach db for other effects to use
-                (window as any).db = db; 
-              } else {
-                 setFirebaseError("Authentication failed unexpectedly. The user object is null.");
-              }
-            });
-          })
-          .catch((error) => {
-            console.error("Firebase Anonymous Sign-In Failed:", error);
-            setFirebaseError(error.message || "An unknown error occurred during Firebase setup.");
-          });
+try {
+    firebaseApp = initializeApp(firebaseConfig);
+    auth = getAuth(firebaseApp);
+    db = getFirestore(firebaseApp);
+} catch (error) {
+    console.error("Error initializing Firebase:", error);
+}
 
-    } catch(error: any) {
-        console.error("Firebase Initialization Failed:", error);
-        setFirebaseError(error.message || "A critical error occurred initializing Firebase.");
-    }
-  }, []);
 
-  // Effects for Firebase data syncing
-  useEffect(() => {
-    const db = (window as any).db;
-    if (!isFirebaseReady || !familyId || !db) {
-        if(isFirebaseReady && !familyId) setIsLoading(false);
-        return;
-    }
+const App: React.FC = () => {
+    const [familyId, setFamilyId] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState<Page>('tracker');
+    const [triedFoods, setTriedFoods] = useState<TriedFoodLog[]>([]);
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [mealPlan, setMealPlan] = useState<MealPlan>({});
+    const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    setIsLoading(true);
+    const [modalState, setModalState] = useState<ModalState>({ type: null });
 
-    const unsubProfile = onSnapshot(doc(db, "families", familyId, "data", "profile"), (doc) => {
-      setProfile(doc.data() as UserProfile || {});
-    }, (error) => console.error("Profile snapshot error:", error));
-
-    const unsubTriedFoods = onSnapshot(collection(db, "families", familyId, "triedFoods"), (snapshot) => {
-      const foods = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as TriedFoodLog[];
-      setTriedFoods(foods);
-    }, (error) => console.error("TriedFoods snapshot error:", error));
-
-    const unsubRecipes = onSnapshot(collection(db, "families", familyId, "recipes"), (snapshot) => {
-        const recipeData = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })) as Recipe[];
-        setRecipes(recipeData);
-    }, (error) => console.error("Recipes snapshot error:", error));
-    
-    const unsubMealPlan = onSnapshot(doc(db, "families", familyId, "data", "mealPlan"), (doc) => {
-        setMealPlan(doc.data() as MealPlan || {});
-    }, (error) => console.error("MealPlan snapshot error:", error));
-
-    const timer = setTimeout(() => setIsLoading(false), 1200);
-
-    return () => {
-      unsubProfile();
-      unsubTriedFoods();
-      unsubRecipes();
-      unsubMealPlan();
-      clearTimeout(timer);
+    const handleSetFamilyId = (id: string) => {
+        localStorage.setItem('familyId', id);
+        setFamilyId(id);
     };
-  }, [familyId, isFirebaseReady]);
 
-  // Handlers
-  const handleJoinFamily = async (id: string) => {
-    const db = (window as any).db;
-    const familyDocRef = doc(db, "families", id);
-    const familyDoc = await getDoc(familyDocRef);
-    if (!familyDoc.exists()) {
-        const batch = writeBatch(db);
-        batch.set(doc(db, "families", id), { createdAt: serverTimestamp() });
-        batch.set(doc(db, "families", id, "data", "profile"), {});
-        batch.set(doc(db, "families", id, "data", "mealPlan"), {});
-        await batch.commit();
-    }
-    localStorage.setItem('familyId', id);
-    setFamilyId(id);
-  };
+    const handleLogOut = () => {
+        localStorage.removeItem('familyId');
+        setFamilyId(null);
+        setTriedFoods([]);
+        setRecipes([]);
+        setMealPlan({});
+        setUserProfile(null);
+        setCurrentPage('tracker');
+    };
 
-  const handleLogOut = () => {
-    localStorage.removeItem('familyId');
-    setFamilyId(null);
-    setProfile(null);
-    setTriedFoods([]);
-    setRecipes([]);
-    setMealPlan({});
-    setCurrentPage('tracker');
-  };
+    const saveProfile = async (profile: UserProfile) => {
+        if (!familyId) return;
+        const docPath = `/artifacts/${APP_ID}/users/${familyId}/profile/data`;
+        await setDoc(doc(db, docPath), profile, { merge: true });
+        setUserProfile(profile);
+    };
 
-  const handleSaveProfile = useCallback(async (newProfile: UserProfile) => {
-    if (!familyId) return;
-    const db = (window as any).db;
-    await setDoc(doc(db, "families", familyId, "data", "profile"), newProfile, { merge: true });
-    alert("Profile saved!");
-  }, [familyId]);
+    const saveTriedFood = async (foodName: string, data: FoodLogData) => {
+        if (!familyId) return;
+        const docPath = `/artifacts/${APP_ID}/users/${familyId}/triedFoods/${foodName}`;
+        await setDoc(doc(db, docPath), data);
+        setModalState({ type: null });
+    };
 
-  const handleSaveFoodLog = useCallback(async (foodName: string, data: FoodLogData) => {
-    if (!familyId) return;
-    const db = (window as any).db;
-    const logDocRef = doc(db, "families", familyId, "triedFoods", foodName);
-    await setDoc(logDocRef, data, { merge: true });
-    setModalState({ type: null });
-  }, [familyId]);
-  
-  const handleSaveRecipe = useCallback(async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
-    if (!familyId) return;
-    const db = (window as any).db;
-    await addDoc(collection(db, "families", familyId, "recipes"), {
-        ...recipeData,
-        createdAt: serverTimestamp()
-    });
-    setModalState({ type: null });
-  }, [familyId]);
+    const addRecipe = async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
+        if (!familyId) return;
+        const collectionPath = `/artifacts/${APP_ID}/users/${familyId}/recipes`;
+        await addDoc(collection(db, collectionPath), {
+            ...recipeData,
+            createdAt: Timestamp.now()
+        });
+        setModalState({ type: null });
+    };
 
-  const handleDeleteRecipe = useCallback(async (recipeId: string) => {
-    if (!familyId) return;
-    const db = (window as any).db;
-    await deleteDoc(doc(db, "families", familyId, "recipes", recipeId));
-    setModalState({ type: null });
-  }, [familyId]);
-
-  const handleUpdateMealPlan = useCallback(async (newMealPlan: MealPlan) => {
-    if (!familyId) return;
-    const db = (window as any).db;
-    await setDoc(doc(db, "families", familyId, "data", "mealPlan"), newMealPlan);
-  }, [familyId]);
-  
-  const handleAddToPlan = (date: string, meal: string) => {
-    setModalState({ type: 'SELECT_RECIPE', date, meal });
-  };
-
-  const handleSelectRecipeForPlan = (recipe: Recipe, date: string, meal: string) => {
-    const newMealPlan = { ...mealPlan };
-    if (!newMealPlan[date]) {
-        newMealPlan[date] = {};
-    }
-    newMealPlan[date][meal] = { id: recipe.id, title: recipe.title };
-    handleUpdateMealPlan(newMealPlan);
-    setModalState({ type: null });
-  };
-
-  const handleFoodClick = (food: Food) => {
-    setModalState({ type: 'LOG_FOOD', food });
-  };
-
-  const closeModal = () => setModalState({ type: null });
-
-  // Render logic
-  const AppContent: React.FC = () => {
-    if (firebaseError) {
-        return <ConfigCheckPage error={firebaseError} />;
-    }
+    const deleteRecipe = async (recipeId: string) => {
+        if (!familyId) return;
+        const docPath = `/artifacts/${APP_ID}/users/${familyId}/recipes/${recipeId}`;
+        await deleteDoc(doc(db, docPath));
+        setModalState({ type: null });
+    };
     
-    if (isLoading || !isFirebaseReady) {
-      return (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <Icon name="loader-circle" className="w-12 h-12 text-teal-600 animate-spin" />
-            <p className="mt-2 text-lg font-medium text-gray-700">Connecting to your tracker...</p>
-          </div>
-        </div>
-      );
-    }
-    
-    if (!familyId) {
-      return <FamilyIdModal onJoin={handleJoinFamily} />;
-    }
+    const saveMealToPlan = async (date: string, meal: string, recipeId: string, recipeTitle: string) => {
+        if (!familyId) return;
+        const docPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan/${date}`;
+        await setDoc(doc(db, docPath), { [meal]: { id: recipeId, title: recipeTitle } }, { merge: true });
+        setModalState({ type: null });
+    };
+
+    const removeMealFromPlan = async (date: string, meal: string) => {
+        if (!familyId) return;
+        const docPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan/${date}`;
+        const docRef = doc(db, docPath);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            let data = docSnap.data();
+            delete data[meal];
+            await setDoc(docRef, data);
+        }
+    };
+
+
+    useEffect(() => {
+        const storedFamilyId = localStorage.getItem('familyId');
+        if (storedFamilyId) {
+            setFamilyId(storedFamilyId);
+        } else {
+            setLoading(false);
+        }
+
+        const unsubscribe = onAuthStateChanged(auth, user => {
+            if (!user) {
+                signInAnonymously(auth).catch(error => console.error("Anonymous sign-in failed", error));
+            }
+        });
+
+        return () => unsubscribe();
+    }, []);
+
+    useEffect(() => {
+        if (!familyId) return;
+        
+        setLoading(true);
+        const listeners: Unsubscribe[] = [];
+
+        // Profile listener
+        const profileDocPath = `/artifacts/${APP_ID}/users/${familyId}/profile/data`;
+        getDoc(doc(db, profileDocPath)).then(docSnap => {
+            if (docSnap.exists()) {
+                setUserProfile(docSnap.data() as UserProfile);
+            }
+        });
+
+        // Tried Foods listener
+        const triedFoodsPath = `/artifacts/${APP_ID}/users/${familyId}/triedFoods`;
+        listeners.push(onSnapshot(collection(db, triedFoodsPath), snapshot => {
+            setTriedFoods(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as TriedFoodLog)));
+        }));
+
+        // Recipes listener
+        const recipesPath = `/artifacts/${APP_ID}/users/${familyId}/recipes`;
+        listeners.push(onSnapshot(collection(db, recipesPath), snapshot => {
+            setRecipes(snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)));
+        }));
+
+        // Meal Plan listener
+        const mealPlanPath = `/artifacts/${APP_ID}/users/${familyId}/mealPlan`;
+        listeners.push(onSnapshot(collection(db, mealPlanPath), snapshot => {
+            const newMealPlan: MealPlan = {};
+            snapshot.docs.forEach(d => {
+                newMealPlan[d.id] = d.data();
+            });
+            setMealPlan(newMealPlan);
+        }));
+
+        setLoading(false);
+        
+        return () => {
+            listeners.forEach(unsub => unsub());
+        };
+    }, [familyId]);
 
     const renderPage = () => {
+        const progress = {
+            triedCount: triedFoods.length,
+            totalCount: totalFoodCount
+        };
+
         switch (currentPage) {
-            case 'tracker': return <TrackerPage triedFoods={triedFoods} onFoodClick={handleFoodClick} />;
-            case 'ideas': return <IdeasPage userProfile={profile} triedFoods={triedFoods} onSaveProfile={handleSaveProfile} onLogOut={handleLogOut} onFoodClick={handleFoodClick} />;
-            case 'recipes': return <RecipesPage recipes={recipes} mealPlan={mealPlan} onShowAddRecipe={() => setModalState({ type: 'ADD_RECIPE' })} onShowImportRecipe={() => setModalState({ type: 'IMPORT_RECIPE' })} onShowSuggestRecipe={() => setModalState({ type: 'SUGGEST_RECIPE' })} onViewRecipe={(recipe) => setModalState({ type: 'VIEW_RECIPE', recipe })} onAddToPlan={handleAddToPlan} onShowShoppingList={() => setModalState({ type: 'SHOPPING_LIST' })} />;
-            case 'log': return <LogPage triedFoods={triedFoods} babyName={profile?.babyName} />;
-            case 'learn': return <LearnPage />;
-            default: return null;
+            case 'tracker':
+                return <TrackerPage triedFoods={triedFoods} onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })} />;
+            case 'ideas':
+                return <IdeasPage userProfile={userProfile} triedFoods={triedFoods} onSaveProfile={saveProfile} onLogOut={handleLogOut} onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })}/>;
+            case 'recipes':
+                return <RecipesPage 
+                    recipes={recipes} 
+                    mealPlan={mealPlan}
+                    onShowAddRecipe={() => setModalState({ type: 'ADD_RECIPE' })}
+                    onShowImportRecipe={() => setModalState({ type: 'IMPORT_RECIPE' })}
+                    onShowSuggestRecipe={() => setModalState({ type: 'SUGGEST_RECIPE' })}
+                    onViewRecipe={(recipe) => setModalState({ type: 'VIEW_RECIPE', recipe })}
+                    onAddToPlan={(date, meal) => setModalState({ type: 'SELECT_RECIPE', date, meal })}
+                    onShowShoppingList={() => setModalState({ type: 'SHOPPING_LIST' })}
+                />;
+            case 'log':
+                return <LogPage triedFoods={triedFoods} babyName={userProfile?.babyName} />;
+            case 'learn':
+                return <LearnPage />;
+            default:
+                return <TrackerPage triedFoods={triedFoods} onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })} />;
         }
     };
-    
-    // Fix: Refactored the renderModal function to use a single switch statement for the discriminated union.
-    // This provides clearer logic and resolves TypeScript's control-flow analysis errors.
-    const renderModal = () => {
-        const state = modalState;
-        switch (state.type) {
-            case null:
-                return null;
-            case 'LOG_FOOD':
-                return <FoodLogModal food={state.food} existingLog={triedFoods.find(f => f.id === state.food.name)} onClose={closeModal} onSave={handleSaveFoodLog} onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })} />;
-            case 'HOW_TO_SERVE':
-                return <HowToServeModal food={state.food} onClose={closeModal} />;
-            case 'ADD_RECIPE':
-                return <RecipeModal onClose={closeModal} onSave={handleSaveRecipe} initialData={state.recipeData} />;
-            case 'VIEW_RECIPE':
-                return <ViewRecipeModal recipe={state.recipe} onClose={closeModal} onDelete={handleDeleteRecipe} />;
+
+    const renderModals = () => {
+        if (!modalState.type) return null;
+
+        switch (modalState.type) {
+            case 'LOG_FOOD': {
+                // FIX: Destructure food from modalState to help TypeScript with type narrowing.
+                const { food } = modalState;
+                const existingLog = triedFoods.find(f => f.id === food.name);
+                return <FoodLogModal 
+                    food={food} 
+                    existingLog={existingLog}
+                    onClose={() => setModalState({ type: null })} 
+                    onSave={saveTriedFood}
+                    onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })}
+                />;
+            }
+            case 'HOW_TO_SERVE': {
+                // FIX: Destructure food from modalState to help TypeScript with type narrowing and avoid stale closures.
+                const { food } = modalState;
+                return <HowToServeModal food={food} onClose={() => setModalState({ type: 'LOG_FOOD', food: food })} />;
+            }
+            case 'ADD_RECIPE': {
+                // FIX: Destructure recipeData from modalState to help TypeScript with type narrowing.
+                const { recipeData } = modalState;
+                return <RecipeModal onClose={() => setModalState({ type: null })} onSave={addRecipe} initialData={recipeData} />;
+            }
+            case 'VIEW_RECIPE': {
+                // FIX: Destructure recipe from modalState to help TypeScript with type narrowing.
+                const { recipe } = modalState;
+                return <ViewRecipeModal recipe={recipe} onClose={() => setModalState({ type: null })} onDelete={deleteRecipe} />;
+            }
             case 'IMPORT_RECIPE':
-                return <AiImportModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
+                return <AiImportModal 
+                    onClose={() => setModalState({ type: null })} 
+                    onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })}
+                />;
             case 'SUGGEST_RECIPE':
-                return <AiSuggestModal onClose={closeModal} onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })} />;
+                return <AiSuggestModal 
+                    onClose={() => setModalState({ type: null })}
+                    onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })}
+                />;
+            case 'SELECT_RECIPE': {
+                // FIX: Destructure date and meal from modalState to help TypeScript with type narrowing and avoid stale closures.
+                const { date, meal } = modalState;
+                return <SelectRecipeModal 
+                    recipes={recipes} 
+                    meal={meal}
+                    onClose={() => setModalState({ type: null })}
+                    onSelect={(recipe) => saveMealToPlan(date, meal, recipe.id, recipe.title)}
+                />;
+            }
             case 'SHOPPING_LIST':
-                return <ShoppingListModal recipes={recipes} mealPlan={mealPlan} onClose={closeModal} />;
-            case 'SELECT_RECIPE':
-                return <SelectRecipeModal recipes={recipes} meal={state.meal} onClose={closeModal} onSelect={(recipe) => handleSelectRecipeForPlan(recipe, state.date, state.meal)} />;
+                 return <ShoppingListModal
+                    recipes={recipes}
+                    mealPlan={mealPlan}
+                    onClose={() => setModalState({ type: null })}
+                />;
             default:
-                // This will never be reached if all types are handled, but it's good practice.
                 return null;
         }
     };
 
+
+    if (loading && !familyId) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="spinner"></div>
+            </div>
+        );
+    }
+
+    if (!familyId) {
+        return <FamilyIdModal onJoin={handleSetFamilyId} />;
+    }
 
     return (
         <>
-            <Layout currentPage={currentPage} setCurrentPage={setCurrentPage} profile={profile} familyId={familyId} progress={{ triedCount: triedFoods.length, totalCount: totalFoodCount }}>
+            <Layout
+                currentPage={currentPage}
+                setCurrentPage={setCurrentPage}
+                profile={userProfile}
+                familyId={familyId}
+                progress={{ triedCount: triedFoods.length, totalCount: totalFoodCount }}
+            >
                 {renderPage()}
             </Layout>
-            {renderModal()}
+            {renderModals()}
         </>
     );
-  }
-
-  return <AppContent />;
-}
+};
 
 export default App;

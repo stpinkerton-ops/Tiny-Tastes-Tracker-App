@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef } from 'react';
 
 // This is a global declaration for the lucide library loaded from the CDN

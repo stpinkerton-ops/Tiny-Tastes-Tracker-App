@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
-import { Food, TriedFoodLog, Filter, FoodCategory } from '../../types.ts';
-import { allFoods, totalFoodCount } from '../../constants.ts';
-import Icon from '../ui/Icon.tsx';
+import { Food, TriedFoodLog, Filter, FoodCategory } from '../../types';
+import { allFoods, totalFoodCount } from '../../constants';
+import Icon from '../ui/Icon';
 
 interface TrackerPageProps {
   triedFoods: TriedFoodLog[];

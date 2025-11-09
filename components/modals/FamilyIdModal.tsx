@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 
 interface FamilyIdModalProps {
@@ -28,7 +29,7 @@ const FamilyIdModal: React.FC<FamilyIdModalProps> = ({ onJoin }) => {
               onChange={(e) => setId(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
               placeholder="e.g., smith-baby-2025"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm text-gray-900"
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
             />
             <p className="mt-2 text-xs text-gray-500">This is case-sensitive. Share it exactly with your family members.</p>
           </div>

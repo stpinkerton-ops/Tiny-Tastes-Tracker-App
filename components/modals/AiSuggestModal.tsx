@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
-import { Recipe } from '../../types.ts';
-import { suggestRecipe } from '../../services/geminiService.ts';
-import Icon from '../ui/Icon.tsx';
+import { Recipe } from '../../types';
+import { suggestRecipe } from '../../services/geminiService';
+import Icon from '../ui/Icon';
 
 interface AiSuggestModalProps {
   onClose: () => void;

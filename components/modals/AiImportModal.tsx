@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
-import { Recipe } from '../../types.ts';
-import { importRecipeFromImage } from '../../services/geminiService.ts';
-import Icon from '../ui/Icon.tsx';
+import { Recipe } from '../../types';
+import { importRecipeFromImage } from '../../services/geminiService';
+import Icon from '../ui/Icon';
 
 interface AiImportModalProps {
   onClose: () => void;

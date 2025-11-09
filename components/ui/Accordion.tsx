@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import Icon from './Icon.tsx';
+import Icon from './Icon';
 
 interface AccordionProps {
   title: string;

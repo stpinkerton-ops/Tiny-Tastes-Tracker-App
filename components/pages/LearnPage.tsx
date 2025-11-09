@@ -1,6 +1,7 @@
+
 import React from 'react';
-import { researchData } from '../../constants.ts';
-import Accordion from '../ui/Accordion.tsx';
+import { researchData } from '../../constants';
+import Accordion from '../ui/Accordion';
 
 const LearnPage: React.FC = () => {
   return (

@@ -1,6 +1,7 @@
+
 import React, { useState, useEffect } from 'react';
-import { Food, TriedFoodLog, FoodLogData } from '../../types.ts';
-import Icon from '../ui/Icon.tsx';
+import { Food, TriedFoodLog, FoodLogData } from '../../types';
+import Icon from '../ui/Icon';
 
 interface FoodLogModalProps {
   food: Food;

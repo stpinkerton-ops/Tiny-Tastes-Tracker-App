@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
-import { UserProfile, TriedFoodLog, Food } from '../../types.ts';
-import { recommendationData, guidesData, allFoods } from '../../constants.ts';
-import Accordion from '../ui/Accordion.tsx';
-import Icon from '../ui/Icon.tsx';
+import { UserProfile, TriedFoodLog, Food } from '../../types';
+import { recommendationData, guidesData, allFoods } from '../../constants';
+import Accordion from '../ui/Accordion';
+import Icon from '../ui/Icon';
 
 interface IdeasPageProps {
   userProfile: UserProfile | null;
