@@ -10,6 +10,7 @@ interface RecommendationsPageProps {
   triedFoods: TriedFoodLog[];
   onSaveProfile: (profile: UserProfile) => void;
   onFoodClick: (food: Food) => void;
+  onShowSubstitutes: (food: Food) => void;
 }
 
 const calculateAge = (dateString: string) => {
@@ -32,26 +33,47 @@ const calculateAge = (dateString: string) => {
     return { ageString, ageKey, totalMonths };
 };
 
-const FoodCard: React.FC<{ food: Food; isTried: boolean; onClick: () => void }> = ({ food, isTried, onClick }) => {
+const FoodCard: React.FC<{ 
+    food: Food; 
+    isTried: boolean; 
+    onClick: () => void;
+    onSubstitutesClick: () => void;
+}> = ({ food, isTried, onClick, onSubstitutesClick }) => {
     const category = allFoods.find(cat => cat.items.some(item => item.name === food.name));
     if (!category) return null;
     const triedClass = isTried ? 'is-tried' : '';
+
     return (
-      <button
-        onClick={onClick}
-        className={`food-card relative ${category.color} ${category.textColor} p-3 h-24 rounded-lg shadow-sm font-medium text-sm text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 border ${category.borderColor} ${triedClass}`}
-        type="button"
-      >
-        <span className="text-3xl">{food.emoji}</span>
-        <span className="mt-1 text-center leading-tight">{food.name}</span>
-        <div className="check-overlay absolute inset-0 bg-white/70 flex items-center justify-center rounded-lg">
-          <Icon name="check-circle-2" className="w-12 h-12 text-teal-600" />
-        </div>
-      </button>
+        <div className={`food-card relative ${category.color} ${category.textColor} rounded-lg shadow-sm font-medium text-sm text-center border ${category.borderColor} ${triedClass} transition-all duration-200 hover:shadow-md`}>
+            <button
+              onClick={onClick}
+              className="w-full p-3 h-24 flex flex-col items-center justify-center cursor-pointer"
+              type="button"
+              aria-label={`Log ${food.name}`}
+            >
+              <span className="text-3xl">{food.emoji}</span>
+              <span className="mt-1 text-center leading-tight">{food.name}</span>
+            </button>
+    
+            <div className="check-overlay absolute inset-0 bg-white/70 flex items-center justify-center rounded-lg">
+              <Icon name="check-circle-2" className="w-12 h-12 text-teal-600" />
+            </div>
+            
+            {!isTried && (
+                <button 
+                    onClick={onSubstitutesClick} 
+                    className="substitute-btn absolute bottom-1 right-1 bg-white/80 hover:bg-white text-teal-700 rounded-full p-1.5 text-xs font-medium flex items-center gap-1 shadow-sm border border-teal-200"
+                    title="Find Substitutes"
+                    aria-label={`Find substitutes for ${food.name}`}
+                >
+                    <Icon name="replace" className="w-4 h-4"/>
+                </button>
+            )}
+      </div>
     );
 };
 
-const RecommendationsPage: React.FC<RecommendationsPageProps> = ({ userProfile, triedFoods, onSaveProfile, onFoodClick }) => {
+const RecommendationsPage: React.FC<RecommendationsPageProps> = ({ userProfile, triedFoods, onSaveProfile, onFoodClick, onShowSubstitutes }) => {
     const [pediatricianApproved, setPediatricianApproved] = useState(userProfile?.pediatricianApproved || false);
 
     const handleApproveEarlyStart = () => {
@@ -101,7 +123,7 @@ const RecommendationsPage: React.FC<RecommendationsPageProps> = ({ userProfile, 
                                     <>
                                         <h4 className="text-md font-medium text-green-700 mb-3">New Foods to Try:</h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-                                            {toTryInStage.map(food => <FoodCard key={food.name} food={food} isTried={false} onClick={() => onFoodClick(food)} />)}
+                                            {toTryInStage.map(food => <FoodCard key={food.name} food={food} isTried={false} onClick={() => onFoodClick(food)} onSubstitutesClick={() => onShowSubstitutes(food)} />)}
                                         </div>
                                     </>
                                 )}
@@ -109,7 +131,7 @@ const RecommendationsPage: React.FC<RecommendationsPageProps> = ({ userProfile, 
                                      <>
                                         <h4 className="text-md font-medium text-gray-500 mt-6 mb-3">Foods Tried This Stage:</h4>
                                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-                                            {triedInStage.map(food => <FoodCard key={food.name} food={food} isTried={true} onClick={() => onFoodClick(food)} />)}
+                                            {triedInStage.map(food => <FoodCard key={food.name} food={food} isTried={true} onClick={() => onFoodClick(food)} onSubstitutesClick={() => onShowSubstitutes(food)} />)}
                                         </div>
                                     </>
                                 )}

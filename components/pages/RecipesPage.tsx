@@ -1,7 +1,7 @@
-
 import React, { useState } from 'react';
 import { Recipe, RecipeFilter, MealPlan } from '../../types';
 import Icon from '../ui/Icon';
+import EmptyState from '../ui/EmptyState';
 
 interface RecipesPageProps {
     recipes: Recipe[];
@@ -23,7 +23,16 @@ const getStartOfWeek = (date: Date) => {
 
 const formatDateString = (date: Date) => date.toISOString().split('T')[0];
 
-const MyRecipesView: React.FC<{ recipes: Recipe[], onViewRecipe: (recipe: Recipe) => void }> = ({ recipes, onViewRecipe }) => {
+const NoRecipesIllustration = () => (
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M25,15 h50 a5,5 0 0 1 5,5 v60 a5,5 0 0 1 -5,5 h-50 a5,5 0 0 1 -5,-5 v-60 a5,5 0 0 1 5,-5 z" />
+        <line x1="28" y1="15" x2="28" y2="85" />
+        <path d="M40 30 H 70 M 40 40 H 70 M 40 50 H 60" strokeDasharray="3 3" />
+        <path d="M 45 60 H 65 L 55 75 Z" />
+    </svg>
+);
+
+const MyRecipesView: React.FC<{ recipes: Recipe[], onViewRecipe: (recipe: Recipe) => void, onShowAddRecipe: () => void }> = ({ recipes, onViewRecipe, onShowAddRecipe }) => {
     const [filter, setFilter] = useState<RecipeFilter>('all');
 
     const filteredRecipes = recipes.filter(recipe => {
@@ -62,9 +71,17 @@ const MyRecipesView: React.FC<{ recipes: Recipe[], onViewRecipe: (recipe: Recipe
                         <p className="text-sm text-gray-600 mt-3 line-clamp-2">{getIngredientsPreview(recipe.ingredients)}</p>
                     </button>
                 )) : (
-                    <p className="text-center text-gray-500 py-10">
-                        {filter === 'all' ? 'Your recipe box is empty. Click "Add New" to save your first one!' : `No recipes found for "${filter}".`}
-                    </p>
+                    <EmptyState
+                        illustration={<NoRecipesIllustration />}
+                        title={filter === 'all' ? 'Your Recipe Box is Empty' : 'No Recipes Found'}
+                        message={filter === 'all' ? 'Get started by adding your first baby-friendly recipe!' : `No recipes match the "${filter}" filter.`}
+                    >
+                        {filter === 'all' && (
+                             <button onClick={onShowAddRecipe} className="inline-flex items-center gap-2 px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-teal-600 hover:bg-teal-700">
+                                <Icon name="plus" className="w-4 h-4" /> Add First Recipe
+                            </button>
+                        )}
+                    </EmptyState>
                 )}
             </div>
         </div>
@@ -178,7 +195,7 @@ const RecipesPage: React.FC<RecipesPageProps> = (props) => {
                 </nav>
             </div>
             
-            {subPage === 'my-recipes' && <MyRecipesView recipes={props.recipes} onViewRecipe={props.onViewRecipe} />}
+            {subPage === 'my-recipes' && <MyRecipesView recipes={props.recipes} onViewRecipe={props.onViewRecipe} onShowAddRecipe={props.onShowAddRecipe} />}
             {subPage === 'meal-planner' && <MealPlannerView mealPlan={props.mealPlan} recipes={props.recipes} onAddToPlan={props.onAddToPlan} onShowShoppingList={props.onShowShoppingList} />}
         </>
     );

@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { Recipe } from '../types';
+import { Recipe, FoodSubstitute } from '../types';
 
 const API_KEY = process.env.API_KEY;
 
@@ -20,10 +20,10 @@ const fileToGenerativePart = async (file: File) => {
   };
 };
 
-export const suggestRecipe = async (prompt: string): Promise<Partial<Recipe>> => {
+export const suggestRecipe = async (prompt: string, babyAgeInMonths: number): Promise<Partial<Recipe>> => {
   try {
     const fullPrompt = `You are a baby-led weaning recipe creator. A parent wants a recipe using the following ingredients: "${prompt}". 
-    Create a simple recipe appropriate for a baby 6-12 months old. 
+    Create a simple recipe appropriate for a baby who is ${babyAgeInMonths} months old. 
     Respond ONLY with a JSON object in the format {"title": "...", "ingredients": "...", "instructions": "..."}.
     Make sure ingredients are a bulleted list and instructions are a numbered list.`;
 
@@ -84,6 +84,34 @@ export const categorizeShoppingList = async (ingredients: string[]): Promise<Rec
     } catch (error) {
         console.error("Error categorizing shopping list:", error);
         throw new Error("Failed to categorize shopping list.");
+    }
+};
+
+export const getFoodSubstitutes = async (foodName: string, babyAgeInMonths: number): Promise<FoodSubstitute[]> => {
+    try {
+        const prompt = `For a baby who is ${babyAgeInMonths} months old and doing baby-led weaning, suggest 3-4 simple food substitutes for "${foodName}". 
+The substitutes should be nutritionally similar, commonly available, and safe for that age. 
+Provide a brief reason for each suggestion, focusing on texture, key nutrients, or preparation.
+Respond ONLY with a JSON object in the format: {"substitutes": [{"name": "...", "reason": "..."}, ...]}.
+Ensure the 'name' of the substitute is just the food name (e.g., "Mashed Peas", "Avocado Spears").`;
+
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [{ parts: [{ text: prompt }] }],
+            config: {
+                responseMimeType: "application/json",
+            },
+        });
+        
+        const text = response.text.trim();
+        const parsed = JSON.parse(text);
+        if (parsed.substitutes && Array.isArray(parsed.substitutes)) {
+            return parsed.substitutes;
+        }
+        return [];
+    } catch (error) {
+        console.error("Error getting food substitutes:", error);
+        throw new Error("Failed to get food substitutes from AI.");
     }
 };
 

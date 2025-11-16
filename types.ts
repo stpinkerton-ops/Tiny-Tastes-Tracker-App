@@ -1,4 +1,3 @@
-
 export type Page = 'tracker' | 'recommendations' | 'recipes' | 'learn' | 'profile';
 export type Filter = 'all' | 'to_try' | 'tried';
 export type RecipeFilter = 'all' | 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -23,6 +22,7 @@ export interface FoodLogData {
     meal: string;
     allergyReaction: string;
     notes: string;
+    tryCount: number;
 }
 
 export interface TriedFoodLog extends FoodLogData {
@@ -55,6 +55,11 @@ export interface MealPlan {
     }
 }
 
+export interface FoodSubstitute {
+    name: string;
+    reason: string;
+}
+
 // Modal State Types
 type LogFoodModalState = { type: 'LOG_FOOD'; food: Food };
 type HowToServeModalState = { type: 'HOW_TO_SERVE'; food: Food };
@@ -64,6 +69,7 @@ type ImportRecipeModalState = { type: 'IMPORT_RECIPE' };
 type SuggestRecipeModalState = { type: 'SUGGEST_RECIPE' };
 type ShoppingListModalState = { type: 'SHOPPING_LIST' };
 type SelectRecipeModalState = { type: 'SELECT_RECIPE'; date: string; meal: string; };
+type SubstitutesModalState = { type: 'SUBSTITUTES'; food: Food };
 type NullModalState = { type: null };
 
 export type ModalState =
@@ -75,4 +81,5 @@ export type ModalState =
   | SuggestRecipeModalState
   | ShoppingListModalState
   | SelectRecipeModalState
+  | SubstitutesModalState
   | NullModalState;

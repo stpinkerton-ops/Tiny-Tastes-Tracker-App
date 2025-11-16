@@ -1,15 +1,16 @@
-
 import React, { useState } from 'react';
-import { Recipe } from '../../types';
+import { Recipe, UserProfile } from '../../types';
 import { suggestRecipe } from '../../services/geminiService';
+import { calculateAgeInMonths } from '../../utils';
 import Icon from '../ui/Icon';
 
 interface AiSuggestModalProps {
   onClose: () => void;
   onRecipeParsed: (recipe: Partial<Recipe>) => void;
+  userProfile: UserProfile | null;
 }
 
-const AiSuggestModal: React.FC<AiSuggestModalProps> = ({ onClose, onRecipeParsed }) => {
+const AiSuggestModal: React.FC<AiSuggestModalProps> = ({ onClose, onRecipeParsed, userProfile }) => {
     const [prompt, setPrompt] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -19,7 +20,8 @@ const AiSuggestModal: React.FC<AiSuggestModalProps> = ({ onClose, onRecipeParsed
         setLoading(true);
         setError(null);
         try {
-            const recipeData = await suggestRecipe(prompt);
+            const ageInMonths = calculateAgeInMonths(userProfile?.birthDate);
+            const recipeData = await suggestRecipe(prompt, ageInMonths);
             onRecipeParsed(recipeData);
         } catch (err: any) {
             setError(err.message || "Failed to generate recipe.");

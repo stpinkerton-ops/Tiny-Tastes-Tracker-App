@@ -1,8 +1,8 @@
-
 import React, { useState } from 'react';
 import { Food, TriedFoodLog, Filter, FoodCategory } from '../../types';
 import { allFoods, totalFoodCount } from '../../constants';
 import Icon from '../ui/Icon';
+import EmptyState from '../ui/EmptyState';
 
 interface TrackerPageProps {
   triedFoods: TriedFoodLog[];
@@ -39,6 +39,14 @@ const FilterButton: React.FC<{ filter: Filter, currentFilter: Filter, onClick: (
     );
 };
 
+const NoResultsIllustration = () => (
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M 25 20 H 75 V 80 H 25 Z" strokeDasharray="5 5" rx="5" />
+        <circle cx="50" cy="50" r="15" strokeWidth="2.5"/>
+        <line x1="62" y1="62" x2="75" y2="75" strokeWidth="2.5"/>
+        <line x1="40" y1="60" x2="60" y2="40" strokeWidth="1.5" />
+    </svg>
+);
 
 const TrackerPage: React.FC<TrackerPageProps> = ({ triedFoods, onFoodClick }) => {
   const [filter, setFilter] = useState<Filter>('all');
@@ -94,11 +102,11 @@ const TrackerPage: React.FC<TrackerPageProps> = ({ triedFoods, onFoodClick }) =>
           </div>
         ))
       ) : (
-        <div className="text-center py-10 px-4">
-          <Icon name="search-x" className="w-12 h-12 text-gray-400 mx-auto" />
-          <h3 className="mt-2 text-lg font-medium text-gray-900">No Foods Found</h3>
-          <p className="mt-1 text-sm text-gray-500">No foods match your current filter.</p>
-        </div>
+        <EmptyState
+            illustration={<NoResultsIllustration />}
+            title="No Foods Found"
+            message="There are no foods that match your current filter selection."
+        />
       )}
     </>
   );

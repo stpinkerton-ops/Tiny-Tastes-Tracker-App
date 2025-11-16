@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, TriedFoodLog } from '../../types';
 import { allFoods } from '../../constants';
 import Icon from '../ui/Icon';
+import EmptyState from '../ui/EmptyState';
 
 interface ProfilePageProps {
   userProfile: UserProfile | null;
@@ -226,17 +227,28 @@ const ProfileView: React.FC<{ userProfile: UserProfile | null, onSaveProfile: (p
     );
 };
 
+const NoLogIllustration = () => (
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="20" y="10" width="60" height="80" rx="5" />
+        <rect x="28" y="10" width="15" height="10" strokeWidth="2.5" />
+        <path d="M 30 30 H 70 M 30 40 H 70 M 30 50 H 50" />
+        <circle cx="50" cy="65" r="12" strokeDasharray="4 4" />
+        <path d="M 45 65 H 55 M 50 60 V 70" />
+    </svg>
+);
+
+
 const LogView: React.FC<{ triedFoods: TriedFoodLog[]; babyName?: string }> = ({ triedFoods, babyName }) => {
     const exportToCSV = () => {
         if (triedFoods.length === 0) {
             alert("No data to export.");
             return;
         }
-        const headers = ['Food Name', 'Date', 'Meal', 'Reaction (1-7)', 'More than 1 Bite?', 'Allergy Reaction', 'Notes'];
+        const headers = ['Food Name', 'Date', 'Meal', 'Reaction (1-7)', 'More than 1 Bite?', 'Allergy Reaction', 'Notes', 'Try Count'];
         const rows = triedFoods.map(log => {
             const safeFoodName = `"${(log.id || '').replace(/"/g, '""')}"`;
             const safeNotes = `"${(log.notes || '').replace(/"/g, '""')}"`;
-            return [ safeFoodName, log.date || '', log.meal || '', log.reaction || '', log.moreThanOneBite ? "Yes" : "No", log.allergyReaction || 'none', safeNotes ].join(',');
+            return [ safeFoodName, log.date || '', log.meal || '', log.reaction || '', log.moreThanOneBite ? "Yes" : "No", log.allergyReaction || 'none', safeNotes, log.tryCount || 1 ].join(',');
         });
         let csvContent = "data:text/csv;charset=utf-8," + headers.join(',') + "\r\n" + rows.join("\r\n");
         const encodedUri = encodeURI(csvContent);
@@ -285,15 +297,27 @@ const LogView: React.FC<{ triedFoods: TriedFoodLog[]; babyName?: string }> = ({ 
             </div>
             <div className="space-y-4">
                 {sortedFoods.length === 0 ? (
-                    <p className="text-center text-gray-500 py-6">No foods logged yet. Start tracking on the 'Tracker' tab!</p>
+                    <EmptyState
+                        illustration={<NoLogIllustration />}
+                        title="No Foods Logged Yet"
+                        message="When you log a food from the 'Tracker' tab, your detailed entry will appear here."
+                    />
                 ) : (
                     sortedFoods.map(log => {
                         const foodDetails = allFoods.flatMap(c => c.items).find(f => f.name === log.id);
                         const { emoji, text } = getReactionDisplay(log.reaction);
+                        const tryCount = log.tryCount || 1;
                         return (
                             <div key={log.id} className="bg-white shadow rounded-lg p-4 border-l-4 border-teal-500">
                                 <div className="flex items-center justify-between">
-                                    <h3 className="text-lg font-semibold text-gray-800">{foodDetails?.emoji || '🍽️'} {log.id}</h3>
+                                    <div className="flex items-center gap-3">
+                                        <h3 className="text-lg font-semibold text-gray-800">{foodDetails?.emoji || '🍽️'} {log.id}</h3>
+                                        {tryCount > 1 && (
+                                            <span className="text-xs font-medium bg-teal-100 text-teal-800 px-2 py-0.5 rounded-full">
+                                                Tried {tryCount} times
+                                            </span>
+                                        )}
+                                    </div>
                                     <span className="text-sm text-gray-500">{log.date}</span>
                                 </div>
                                 <div className="mt-3 grid grid-cols-3 gap-4 text-sm">

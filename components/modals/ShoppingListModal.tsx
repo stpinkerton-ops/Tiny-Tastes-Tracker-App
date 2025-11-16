@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Recipe, MealPlan } from '../../types';
 import { categorizeShoppingList } from '../../services/geminiService';
 import Icon from '../ui/Icon';
+import EmptyState from '../ui/EmptyState';
 
 const parseIngredients = (text: string) => {
     if (typeof text !== 'string') return [];
@@ -17,15 +17,27 @@ interface ShoppingListModalProps {
     onClose: () => void;
 }
 
+const NoMealsIllustration = () => (
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20,25 L28,70 H72 L80,25 Z" />
+        <circle cx="35" cy="80" r="5" />
+        <circle cx="65" cy="80" r="5" />
+        <line x1="20" y1="25" x2="80" y2="25"/>
+        <line x1="45" y1="25" x2="55" y2="10" />
+    </svg>
+);
+
 const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan, onClose }) => {
     const [categorizedList, setCategorizedList] = useState<Record<string, string[]>>({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isEmpty, setIsEmpty] = useState(false);
 
     useEffect(() => {
         const generateList = async () => {
             setLoading(true);
             setError(null);
+            setIsEmpty(false);
             
             const allIngredients = new Set<string>();
             const weekStartDate = new Date(); // Assuming current week for simplicity
@@ -51,7 +63,7 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
             
             const ingredientsList = [...allIngredients];
             if (ingredientsList.length === 0) {
-                setCategorizedList({ 'Info': ['No meals planned for this week.'] });
+                setIsEmpty(true);
                 setLoading(false);
                 return;
             }
@@ -99,14 +111,20 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
                     <h2 className="text-xl font-semibold text-gray-800">Weekly Shopping List</h2>
                     <button type="button" onClick={onClose} className="text-gray-400 hover:text-gray-600"><Icon name="x" /></button>
                 </div>
-                <div className="p-6 modal-scroll-content prose-static">
+                <div className="p-6 modal-scroll-content">
                     {loading ? (
                         <div className="text-center p-6">
                             <div className="spinner mx-auto"></div>
                             <p className="mt-4 text-sm text-gray-600">Categorizing list with AI...</p>
                         </div>
+                    ) : isEmpty ? (
+                        <EmptyState
+                            illustration={<NoMealsIllustration />}
+                            title="No Meals Planned"
+                            message="Add recipes to your meal plan for the current week to generate a shopping list."
+                        />
                     ) : (
-                        <>
+                        <div className="prose-static">
                             {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
                             {Object.entries(categorizedList).map(([category, items]) => (
                                 <div key={category}>
@@ -116,7 +134,7 @@ const ShoppingListModal: React.FC<ShoppingListModalProps> = ({ recipes, mealPlan
                                     </ul>
                                 </div>
                             ))}
-                        </>
+                        </div>
                     )}
                 </div>
             </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Page, Food, TriedFoodLog, Recipe, UserProfile, MealPlan, ModalState, FoodLogData } from './types';
 import { totalFoodCount } from './constants';
@@ -16,6 +15,7 @@ import AiImportModal from './components/modals/AiImportModal';
 import AiSuggestModal from './components/modals/AiSuggestModal';
 import ShoppingListModal from './components/modals/ShoppingListModal';
 import SelectRecipeModal from './components/modals/SelectRecipeModal';
+import SubstitutesModal from './components/modals/SubstitutesModal';
 
 const OnboardingModal: React.FC<{ onSave: (profile: UserProfile) => void; }> = ({ onSave }) => {
   const [babyName, setBabyName] = useState('');
@@ -86,10 +86,25 @@ const App: React.FC = () => {
     };
 
     const saveTriedFood = async (foodName: string, data: FoodLogData) => {
-        const newTriedFoods = [...triedFoods.filter(f => f.id !== foodName), { id: foodName, ...data }];
+        const newLogData = {
+            ...data,
+            tryCount: data.tryCount || 1, 
+        };
+        const newTriedFoods = [...triedFoods.filter(f => f.id !== foodName), { id: foodName, ...newLogData }];
         localStorage.setItem(`tiny-tastes-tracker-triedFoods`, JSON.stringify(newTriedFoods));
         setTriedFoods(newTriedFoods);
         setModalState({ type: null });
+    };
+
+    const incrementTryCount = async (foodName: string) => {
+        const updatedTriedFoods = triedFoods.map(food => {
+            if (food.id === foodName) {
+                return { ...food, tryCount: (food.tryCount || 1) + 1 };
+            }
+            return food;
+        });
+        localStorage.setItem(`tiny-tastes-tracker-triedFoods`, JSON.stringify(updatedTriedFoods));
+        setTriedFoods(updatedTriedFoods);
     };
 
     const addRecipe = async (recipeData: Omit<Recipe, 'id' | 'createdAt'>) => {
@@ -170,7 +185,11 @@ const App: React.FC = () => {
         setUserProfile(loadedProfile);
 
         if (loadedProfile) {
-            setTriedFoods(getFromStorage<TriedFoodLog[]>('triedFoods', []));
+            const loadedTriedFoods = getFromStorage<TriedFoodLog[]>('triedFoods', []).map(log => ({
+                ...log,
+                tryCount: log.tryCount || 1
+            }));
+            setTriedFoods(loadedTriedFoods);
             
             const rawRecipes = getFromStorage<any[]>('recipes', []);
             const cleanedRecipes = rawRecipes.map((r): Recipe | null => {
@@ -208,6 +227,7 @@ const App: React.FC = () => {
                     triedFoods={triedFoods} 
                     onSaveProfile={saveProfile} 
                     onFoodClick={(food: Food) => setModalState({ type: 'LOG_FOOD', food })}
+                    onShowSubstitutes={(food: Food) => setModalState({ type: 'SUBSTITUTES', food })}
                 />;
             case 'recipes':
                 return <RecipesPage 
@@ -245,6 +265,7 @@ const App: React.FC = () => {
                     existingLog={existingLog}
                     onClose={() => setModalState({ type: null })} 
                     onSave={saveTriedFood}
+                    onIncrementTry={incrementTryCount}
                     onShowGuide={(food) => setModalState({ type: 'HOW_TO_SERVE', food })}
                 />;
             }
@@ -277,6 +298,7 @@ const App: React.FC = () => {
                 return <AiSuggestModal 
                     onClose={() => setModalState({ type: null })}
                     onRecipeParsed={(recipeData) => setModalState({ type: 'ADD_RECIPE', recipeData })}
+                    userProfile={userProfile}
                 />;
             case 'SELECT_RECIPE': {
                 return <SelectRecipeModal 
@@ -292,6 +314,14 @@ const App: React.FC = () => {
                     mealPlan={mealPlan}
                     onClose={() => setModalState({ type: null })}
                 />;
+            case 'SUBSTITUTES': {
+                return <SubstitutesModal 
+                    food={modal.food}
+                    userProfile={userProfile}
+                    onClose={() => setModalState({ type: null })}
+                    onSelectSubstitute={(substituteFood) => setModalState({ type: 'LOG_FOOD', food: substituteFood })}
+                />;
+            }
             default:
                 return null;
         }
