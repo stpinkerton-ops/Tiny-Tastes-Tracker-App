@@ -9,7 +9,13 @@ interface TrackerPageProps {
   onFoodClick: (food: Food) => void;
 }
 
-const FoodCard: React.FC<{ food: Food; category: FoodCategory; isTried: boolean; onClick: () => void }> = ({ food, category, isTried, onClick }) => {
+const FoodCard: React.FC<{
+  name: string;
+  emoji: string;
+  category: FoodCategory;
+  isTried: boolean;
+  onClick: () => void;
+}> = ({ name, emoji, category, isTried, onClick }) => {
   const triedClass = isTried ? 'is-tried' : '';
   return (
     <button
@@ -17,8 +23,8 @@ const FoodCard: React.FC<{ food: Food; category: FoodCategory; isTried: boolean;
       className={`food-card relative ${category.color} ${category.textColor} p-3 h-24 rounded-lg shadow-sm font-medium text-sm text-center flex flex-col items-center justify-center cursor-pointer transition-all duration-200 hover:shadow-md hover:scale-105 border ${category.borderColor} ${triedClass}`}
       type="button"
     >
-      <span className="text-3xl">{food.emoji}</span>
-      <span className="mt-1 text-center leading-tight">{food.name}</span>
+      <span className="text-3xl">{emoji}</span>
+      <span className="mt-1 text-center leading-tight">{name}</span>
       <div className="check-overlay absolute inset-0 bg-white/70 flex items-center justify-center rounded-lg">
         <Icon name="check-circle-2" className="w-12 h-12 text-teal-600" />
       </div>
@@ -92,7 +98,8 @@ const TrackerPage: React.FC<TrackerPageProps> = ({ triedFoods, onFoodClick }) =>
               {category.items.map(food => (
                 <FoodCard
                   key={food.name}
-                  food={food}
+                  name={food.name}
+                  emoji={food.emoji}
                   category={category}
                   isTried={triedFoodSet.has(food.name)}
                   onClick={() => onFoodClick(food)}
