@@ -16,48 +16,7 @@ import AiSuggestModal from './components/modals/AiSuggestModal';
 import ShoppingListModal from './components/modals/ShoppingListModal';
 import SelectRecipeModal from './components/modals/SelectRecipeModal';
 import SubstitutesModal from './components/modals/SubstitutesModal';
-
-const OnboardingModal: React.FC<{ onSave: (profile: UserProfile) => void; }> = ({ onSave }) => {
-  const [babyName, setBabyName] = useState('');
-  const [birthDate, setBirthDate] = useState('');
-
-  const handleSubmit = () => {
-    if (babyName.trim() && birthDate) {
-      onSave({ babyName: babyName.trim(), birthDate });
-    } else {
-        alert("Please enter your baby's name and birth date.");
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-gray-50 flex items-center justify-center p-4 z-[999]">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto p-6 border-t-4 border-teal-500">
-        <h2 className="text-2xl font-bold text-gray-800 text-center">Welcome to Tiny Tastes!</h2>
-        <p className="text-center text-gray-600 mt-2 mb-6">Let's get started by creating a profile for your little one.</p>
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="baby-name-input" className="block text-sm font-medium text-gray-700">Baby's Name</label>
-            <input
-              type="text"
-              id="baby-name-input"
-              value={babyName}
-              onChange={(e) => setBabyName(e.target.value)}
-              placeholder="e.g., Alex"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm"
-            />
-          </div>
-          <div>
-             <label htmlFor="birth-date-input" className="block text-sm font-medium text-gray-700">Baby's Birth Date</label>
-             <input type="date" id="birth-date-input" value={birthDate} onChange={e => setBirthDate(e.target.value)} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 sm:text-sm" />
-          </div>
-          <button onClick={handleSubmit} className="w-full inline-flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
-            Get Started
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+import TutorialModal from './components/modals/TutorialModal';
 
 
 const App: React.FC = () => {
@@ -336,7 +295,7 @@ const App: React.FC = () => {
     }
 
     if (!userProfile) {
-        return <OnboardingModal onSave={handleOnboardingSave} />;
+        return <TutorialModal onSave={handleOnboardingSave} />;
     }
 
     return (
