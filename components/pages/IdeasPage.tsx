@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { UserProfile, TriedFoodLog, Food } from '../../types';
 import { recommendationData, allFoods } from '../../constants';
@@ -47,7 +46,7 @@ const FoodCard: React.FC<{
         <div className={`food-card relative ${category.color} ${category.textColor} rounded-lg shadow-sm font-medium text-sm text-center border ${category.borderColor} ${triedClass} transition-all duration-200 hover:shadow-md`}>
             <button
               onClick={onClick}
-              className="w-full p-3 h-24 flex flex-col items-center justify-center cursor-pointer"
+              className="w-full p-3 h-24 flex flex-col items-center justify-center cursor-pointer focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-lg"
               type="button"
               aria-label={`Log ${food.name}`}
             >
@@ -55,14 +54,18 @@ const FoodCard: React.FC<{
               <span className="mt-1 text-center leading-tight">{food.name}</span>
             </button>
     
-            <div className="check-overlay absolute inset-0 bg-white/70 flex items-center justify-center rounded-lg">
+            {/* Added pointer-events-none so clicks pass through to the button underneath */}
+            <div className="check-overlay absolute inset-0 bg-white/70 flex items-center justify-center rounded-lg pointer-events-none">
               <Icon name="check-circle-2" className="w-12 h-12 text-teal-600" />
             </div>
             
             {!isTried && (
                 <button 
-                    onClick={onSubstitutesClick} 
-                    className="substitute-btn absolute bottom-1 right-1 bg-white/80 hover:bg-white text-teal-700 rounded-full p-1.5 text-xs font-medium flex items-center gap-1 shadow-sm border border-teal-200"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onSubstitutesClick();
+                    }}
+                    className="substitute-btn absolute bottom-1 right-1 bg-white/80 hover:bg-white text-teal-700 rounded-full p-1.5 text-xs font-medium flex items-center gap-1 shadow-sm border border-teal-200 z-10 transition-colors"
                     title="Find Substitutes"
                     aria-label={`Find substitutes for ${food.name}`}
                 >
